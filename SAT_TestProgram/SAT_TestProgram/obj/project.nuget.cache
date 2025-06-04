@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "dgSpecHash": "z1BiOUEIbx1210coTIJMtenY2B1vBGeOj/kAydZf2n6GHKbnQHkMCz9+nm3Bj64iM3JSA5Hezv4jNoHysk/mMw==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\elly.kim\\Desktop\\SAT\\SW\\SAT_TestProgram\\SAT_TestProgram\\SAT_TestProgram.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\elly.kim\\.nuget\\packages\\scottplot\\4.1.68\\scottplot.4.1.68.nupkg.sha512",
+    "C:\\Users\\elly.kim\\.nuget\\packages\\scottplot.wpf\\4.1.68\\scottplot.wpf.4.1.68.nupkg.sha512",
+    "C:\\Users\\elly.kim\\.nuget\\packages\\system.drawing.common\\4.7.2\\system.drawing.common.4.7.2.nupkg.sha512",
+    "C:\\Users\\elly.kim\\.nuget\\packages\\system.numerics.vectors\\4.5.0\\system.numerics.vectors.4.5.0.nupkg.sha512",
+    "C:\\Users\\elly.kim\\.nuget\\packages\\system.runtime.interopservices.runtimeinformation\\4.3.0\\system.runtime.interopservices.runtimeinformation.4.3.0.nupkg.sha512",
+    "C:\\Users\\elly.kim\\.nuget\\packages\\system.valuetuple\\4.5.0\\system.valuetuple.4.5.0.nupkg.sha512"
+  ],
+  "logs": []
+}
