@@ -30,26 +30,30 @@ namespace SAT_TestProgram
     public partial class MainWindow : Window
     {
         private readonly DataManager _dataManager;
+        private DataModel _rawSignalData;
+        private DataModel _voidSignalData;
+        private ObservableCollection<string> _appliedAlgorithms;
         private ScatterPlot rawScatter;
         private ScatterPlot voidScatter;
-        private ObservableCollection<DataModel> _rawSignalList;
-        private ObservableCollection<DataModel> _voidSignalList;
-        private ObservableCollection<string> _appliedAlgorithms;
 
         public MainWindow()
         {
             InitializeComponent();
             _dataManager = DataManager.Instance;
 
-            // Initialize collections
-            _rawSignalList = new ObservableCollection<DataModel>();
-            _voidSignalList = new ObservableCollection<DataModel>();
+            // Initialize variables
+            _rawSignalData = null;
+            _voidSignalData = null;
             _appliedAlgorithms = new ObservableCollection<string>();
 
             // Bind the algorithms list
             lstAppliedAlgorithms.ItemsSource = _appliedAlgorithms;
 
             InitializePlots();
+
+            // Add mouse click event handlers for plots
+            plotUpper.MouseDown += Plot_MouseDown;
+            plotLower.MouseDown += Plot_MouseDown;
         }
 
         private void InitializePlots()
@@ -123,12 +127,17 @@ namespace SAT_TestProgram
             {
                 try
                 {
+                    // Clear previous data first
+                    _rawSignalData = null;
+                    plotUpper.Plot.Clear();
+                    plotUpper.Refresh();
+
                     string fileName = System.IO.Path.GetFileNameWithoutExtension(openFileDialog.FileName);
                     await _dataManager.LoadDataAsync(openFileDialog.FileName);
                     if (_dataManager.CurrentData != null)
                     {
                         _dataManager.CurrentData.FileName = fileName;
-                        _rawSignalList.Add(_dataManager.CurrentData);
+                        _rawSignalData = _dataManager.CurrentData;
                         UpdatePlots(_dataManager.CurrentData);
                         UpdateSliderRanges(_dataManager.CurrentData);
                     }
@@ -156,12 +165,17 @@ namespace SAT_TestProgram
             {
                 try
                 {
+                    // Clear previous data first
+                    _voidSignalData = null;
+                    plotLower.Plot.Clear();
+                    plotLower.Refresh();
+
                     string fileName = System.IO.Path.GetFileNameWithoutExtension(openFileDialog.FileName);
                     await _dataManager.LoadDataAsync(openFileDialog.FileName);
                     if (_dataManager.CurrentData != null)
                     {
                         _dataManager.CurrentData.FileName = fileName;
-                        _voidSignalList.Add(_dataManager.CurrentData);
+                        _voidSignalData = _dataManager.CurrentData;
                         UpdatePlots(_dataManager.CurrentData);
                         UpdateSliderRanges(_dataManager.CurrentData);
                     }
@@ -179,14 +193,18 @@ namespace SAT_TestProgram
 
         private void BtnClearRawData_Click(object sender, RoutedEventArgs e)
         {
-            _rawSignalList.Clear();
-            UpdatePlots(null);
+            _rawSignalData = null;
+            plotUpper.Plot.Clear();
+            plotUpper.Plot.Title("Raw Signal");
+            plotUpper.Refresh();
         }
 
         private void BtnClearVoidData_Click(object sender, RoutedEventArgs e)
         {
-            _voidSignalList.Clear();
-            UpdatePlots(null);
+            _voidSignalData = null;
+            plotLower.Plot.Clear();
+            plotLower.Plot.Title("Void Signal");
+            plotLower.Refresh();
         }
 
         private void Algorithm_Click(object sender, RoutedEventArgs e)
@@ -248,7 +266,7 @@ namespace SAT_TestProgram
                     _dataManager.UpdateProcessedData(processedModel.DataIndex[0], algorithmName, processedData);
                 }
                 
-                _voidSignalList.Add(processedModel);
+                _voidSignalData = processedModel;
                 UpdatePlots(processedModel);
             }
         }
@@ -259,79 +277,73 @@ namespace SAT_TestProgram
             {
                 // 상단 그래프 업데이트 (Raw Signal)
                 plotUpper.Plot.Clear();
-                if (chkRawSignal.IsChecked == true)
+                if (chkRawSignal.IsChecked == true && _rawSignalData != null)
                 {
-                    foreach (var rawData in _rawSignalList)
+                    if (_rawSignalData.Volt != null && _rawSignalData.Volt.Length > 0 && _rawSignalData.Second != null)
                     {
-                        if (rawData?.Volt != null && rawData.Volt.Length > 0 && rawData.Second != null)
+                        // Convert seconds to nanoseconds only for display
+                        double[] dataX = _rawSignalData.Second.Select(s => s * ConstValue.TimeUnit.SecondToNanosecond).ToArray();
+                        rawScatter = plotUpper.Plot.AddScatter(dataX, _rawSignalData.Volt);
+                        
+                        // Set axis limits based on actual time range
+                        double xMin = _rawSignalData.Second[0] * ConstValue.TimeUnit.SecondToNanosecond;
+                        double xMax = _rawSignalData.Second[_rawSignalData.Second.Length - 1] * ConstValue.TimeUnit.SecondToNanosecond;
+                        double yMin = _rawSignalData.Volt.Min();
+                        double yMax = _rawSignalData.Volt.Max();
+
+                        // Add some padding for y-axis only (5% of the range)
+                        double yPadding = (yMax - yMin) * 0.05;
+
+                        plotUpper.Plot.SetAxisLimits(
+                            xMin: xMin,
+                            xMax: xMax,
+                            yMin: yMin - yPadding,
+                            yMax: yMax + yPadding
+                        );
+                        
+                        // Update plot title with file name
+                        if (!string.IsNullOrEmpty(_rawSignalData.FileName))
                         {
-                            // Convert seconds to nanoseconds only for display
-                            double[] dataX = rawData.Second.Select(s => s * ConstValue.TimeUnit.SecondToNanosecond).ToArray();
-                            rawScatter = plotUpper.Plot.AddScatter(dataX, rawData.Volt);
-                            
-                            // Set axis limits based on actual time range
-                            double xMin = rawData.Second[0] * ConstValue.TimeUnit.SecondToNanosecond;
-                            double xMax = rawData.Second[rawData.Second.Length - 1] * ConstValue.TimeUnit.SecondToNanosecond;
-                            double yMin = rawData.Volt.Min();
-                            double yMax = rawData.Volt.Max();
-
-                            // Add some padding for y-axis only (5% of the range)
-                            double yPadding = (yMax - yMin) * 0.05;
-
-                            plotUpper.Plot.SetAxisLimits(
-                                xMin: xMin,
-                                xMax: xMax,
-                                yMin: yMin - yPadding,
-                                yMax: yMax + yPadding
-                            );
-                            
-                            // Update plot title with file name
-                            if (!string.IsNullOrEmpty(rawData.FileName))
-                            {
-                                plotUpper.Plot.Title(rawData.FileName);
-                            }
+                            plotUpper.Plot.Title(_rawSignalData.FileName);
                         }
                     }
                 }
                 plotUpper.Refresh();
             }
 
-            // Check if there is data in _voidSignalList
-            if (_voidSignalList.Count > 0 && _voidSignalList[0]?.Volt?.Length > 0)
+            // Check if void signal data exists
+            if (_voidSignalData?.Volt != null && _voidSignalData.Volt.Length > 0)
             {
                 // 하단 그래프 업데이트 (Void Signal)
                 plotLower.Plot.Clear();
                 if (chkProcessedSignal.IsChecked == true)
                 {
-                    foreach (var voidData in _voidSignalList)
+                    if (_voidSignalData.Second != null)
                     {
-                        if (voidData?.Volt != null && voidData.Volt.Length > 0 && voidData.Second != null)
+                        // Convert seconds to nanoseconds only for display
+                        double[] dataX = _voidSignalData.Second.Select(s => s * ConstValue.TimeUnit.SecondToNanosecond).ToArray();
+                        voidScatter = plotLower.Plot.AddScatter(dataX, _voidSignalData.Volt);
+                        
+                        // Set axis limits based on actual time range
+                        double xMin = _voidSignalData.Second[0] * ConstValue.TimeUnit.SecondToNanosecond;
+                        double xMax = _voidSignalData.Second[_voidSignalData.Second.Length - 1] * ConstValue.TimeUnit.SecondToNanosecond;
+                        double yMin = _voidSignalData.Volt.Min();
+                        double yMax = _voidSignalData.Volt.Max();
+
+                        // Add some padding for y-axis only (5% of the range)
+                        double yPadding = (yMax - yMin) * 0.05;
+
+                        plotLower.Plot.SetAxisLimits(
+                            xMin: xMin,
+                            xMax: xMax,
+                            yMin: yMin - yPadding,
+                            yMax: yMax + yPadding
+                        );
+                        
+                        // Update plot title with file name
+                        if (!string.IsNullOrEmpty(_voidSignalData.FileName))
                         {
-                            // Convert seconds to nanoseconds only for display
-                            double[] dataX = voidData.Second.Select(s => s * ConstValue.TimeUnit.SecondToNanosecond).ToArray();
-                            voidScatter = plotLower.Plot.AddScatter(dataX, voidData.Volt);
-                            
-                            // Set axis limits based on actual time range
-                            double xMin = voidData.Second[0] * ConstValue.TimeUnit.SecondToNanosecond;
-                            double xMax = voidData.Second[voidData.Second.Length - 1] * ConstValue.TimeUnit.SecondToNanosecond;
-                            double yMin = voidData.Volt.Min();
-                            double yMax = voidData.Volt.Max();
-
-                            // Add some padding for y-axis only (5% of the range)
-                            double yPadding = (yMax - yMin) * 0.05;
-
-                            plotLower.Plot.SetAxisLimits(
-                                xMin: xMin,
-                                xMax: xMax,
-                                yMin: yMin - yPadding,
-                                yMax: yMax + yPadding
-                            );
-                            
-                            // Update plot title with file name
-                            if (!string.IsNullOrEmpty(voidData.FileName))
-                            {
-                                plotLower.Plot.Title(voidData.FileName);
-                            }
+                            plotLower.Plot.Title(_voidSignalData.FileName);
                         }
                     }
                 }
@@ -367,14 +379,15 @@ namespace SAT_TestProgram
         {
             try
             {
-                if (_dataManager.CurrentData?.Volt != null)
+                if (_dataManager.CurrentData?.Volt != null && _dataManager.CurrentData.Second != null)
                 {
                     plotPreview.Plot.Clear();
 
-                    // Plot the full data range with nanoseconds
-                    double[] xData = _dataManager.CurrentData.Second != null 
-                        ? _dataManager.CurrentData.Second.Select(s => s * 1e9).ToArray()
-                        : Enumerable.Range(0, _dataManager.CurrentData.Volt.Length).Select(x => (double)x).ToArray();
+                    // Convert seconds to nanoseconds for display
+                    double[] xData = _dataManager.CurrentData.Second
+                        .Select(s => s * ConstValue.TimeUnit.SecondToNanosecond).ToArray();
+
+                    // Plot the full data range
                     plotPreview.Plot.AddScatter(xData, _dataManager.CurrentData.Volt, System.Drawing.Color.Gray, 1, 3);
 
                     // Plot the selected range with semi-transparent red
@@ -391,8 +404,8 @@ namespace SAT_TestProgram
 
                     // Set axis limits to show full data range
                     plotPreview.Plot.SetAxisLimits(
-                        xMin: xData.First(),
-                        xMax: xData.Last(),
+                        xMin: xData[0],
+                        xMax: xData[xData.Length - 1],
                         yMin: _dataManager.CurrentData.Volt.Min(),
                         yMax: _dataManager.CurrentData.Volt.Max()
                     );
@@ -504,10 +517,29 @@ namespace SAT_TestProgram
             UpdateAxisLimits();
         }
 
-        private void PlotPreview_MouseMove(object sender, MouseEventArgs e)
+        private void Plot_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            // 미리보기 플롯에서는 마우스 이벤트를 무시
-            e.Handled = true;
+            if (sender is WpfPlot plot)
+            {
+                // 클릭된 그래프의 데이터 가져오기
+                DataModel selectedData = null;
+                if (plot == plotUpper && _rawSignalData != null)
+                {
+                    selectedData = _rawSignalData;
+                }
+                else if (plot == plotLower && _voidSignalData != null)
+                {
+                    selectedData = _voidSignalData;
+                }
+
+                // 데이터가 있는 경우에만 업데이트
+                if (selectedData?.Volt != null && selectedData.Volt.Length > 0)
+                {
+                    UpdateSliderRanges(selectedData);
+                    _dataManager.SetCurrentData(selectedData);
+                    UpdatePreviewPlot();
+                }
+            }
         }
     }
 }
