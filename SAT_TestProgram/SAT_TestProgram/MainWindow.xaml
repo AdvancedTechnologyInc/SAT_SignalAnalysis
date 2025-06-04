@@ -84,42 +84,55 @@
                          Header="Algorithms"
                          Margin="5">
                     <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="2*"/>
-                            <ColumnDefinition Width="3*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Algorithm Buttons -->
-                        <StackPanel Grid.Column="0" Margin="5">
-                            <Button Content="Algorithm 1" 
-                                    Margin="0,5" 
-                                    Padding="5"
-                                    Click="Algorithm_Click"/>
-                            <Button Content="Algorithm 2" 
-                                    Margin="0,5" 
-                                    Padding="5"
-                                    Click="Algorithm_Click"/>
-                            <Button Content="Algorithm 3" 
-                                    Margin="0,5" 
-                                    Padding="5"
-                                    Click="Algorithm_Click"/>
-                            <Button Content="Algorithm 4" 
-                                    Margin="0,5" 
-                                    Padding="5"
-                                    Click="Algorithm_Click"/>
-                            <Button Content="Algorithm 5" 
-                                    Margin="0,5" 
-                                    Padding="5"
-                                    Click="Algorithm_Click"/>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        
+                        <!-- Signal Type Selection -->
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5">
+                            <CheckBox x:Name="chkProcessRaw" Content="Process Raw Signal" Margin="5" IsChecked="True"/>
+                            <CheckBox x:Name="chkProcessVoid" Content="Process Void Signal" Margin="5" IsChecked="True"/>
                         </StackPanel>
 
-                        <!-- Applied Algorithms List -->
-                        <GroupBox Grid.Column="1"
-                                 Header="실행 알고리즘"
-                                 Margin="5">
-                            <ListBox x:Name="lstAppliedAlgorithms"
-                                    Margin="5"/>
-                        </GroupBox>
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="3*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Algorithm Buttons -->
+                            <StackPanel Grid.Column="0" Margin="5">
+                                <Button Content="FDomain Filter" 
+                                        Margin="0,5" 
+                                        Padding="5"
+                                        Click="BtnFDomainFilter_Click"/>
+                                <Button Content="Extract Envelope" 
+                                        Margin="0,5" 
+                                        Padding="5"
+                                        Click="BtnExtractEnvelope_Click"/>
+                                <Button Content="Filter+Envelope" 
+                                        Margin="0,5" 
+                                        Padding="5"
+                                        Click="BtnFilterWithEnvelope_Click"/>
+                                <Button Content="B-Scan Norm" 
+                                        Margin="0,5" 
+                                        Padding="5"
+                                        Click="BtnBScanNorm_Click"/>
+                                <Button Content="C-Scan Norm" 
+                                        Margin="0,5" 
+                                        Padding="5"
+                                        Click="BtnCScanNorm_Click"/>
+                            </StackPanel>
+
+                            <!-- Applied Algorithms List -->
+                            <GroupBox Grid.Column="1"
+                                     Header="실행 알고리즘"
+                                     Margin="5">
+                                <ListBox x:Name="lstAppliedAlgorithms"
+                                        Margin="5"/>
+                            </GroupBox>
+                        </Grid>
                     </Grid>
                 </GroupBox>
             </Grid>

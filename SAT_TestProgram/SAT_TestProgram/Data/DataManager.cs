@@ -63,7 +63,8 @@ namespace SAT_TestProgram.Data
         /// </summary>
         public event EventHandler<DataModel> OnCurrentDataChanged;
 
-        private Dictionary<string, AlgorithmDatas> _algorithmDatas;
+        private Dictionary<string, AlgorithmDatas> _rawAlgorithmDatas;
+        private Dictionary<string, AlgorithmDatas> _voidAlgorithmDatas;
 
         /// <summary>
         /// DataManager 생성자 - private으로 선언하여 외부에서 인스턴스 생성을 막음
@@ -71,7 +72,8 @@ namespace SAT_TestProgram.Data
         private DataManager()
         {
             _dataSet = new List<DataModel>();
-            _algorithmDatas = new Dictionary<string, AlgorithmDatas>();
+            _rawAlgorithmDatas = new Dictionary<string, AlgorithmDatas>();
+            _voidAlgorithmDatas = new Dictionary<string, AlgorithmDatas>();
         }
 
         /// <summary>
@@ -100,7 +102,7 @@ namespace SAT_TestProgram.Data
                         if (values.Length >= 2 && double.TryParse(values[0], out double time) && double.TryParse(values[1], out double volt))
                         {
                             dataIndex.Add(index++);
-                            timeData.Add(time);
+                            timeData.Add(time * ConstValue.TimeUnit.SecondToNanosecond); // 초 단위를 나노초로 변환
                             voltData.Add(volt);
                         }
                     }
@@ -203,7 +205,7 @@ namespace SAT_TestProgram.Data
                     FirstMaxIndex = data.FirstMaxIndex
                 };
 
-                _algorithmDatas[algorithmName] = algorithmResult;
+                _rawAlgorithmDatas[algorithmName] = algorithmResult;
                 OnDataProcessed?.Invoke(this, data);
             }
             catch (Exception ex)
@@ -232,25 +234,39 @@ namespace SAT_TestProgram.Data
             OnCurrentDataChanged?.Invoke(this, null);
         }
 
-        public void AddAlgorithmData(AlgorithmDatas data)
+        public void AddAlgorithmData(AlgorithmDatas data, bool isRawData = true)
         {
             if (data == null) return;
-            _algorithmDatas[data.Name] = data;
+            
+            if (isRawData)
+                _rawAlgorithmDatas[data.Name] = data;
+            else
+                _voidAlgorithmDatas[data.Name] = data;
         }
 
-        public AlgorithmDatas GetAlgorithmData(string name)
+        public AlgorithmDatas GetAlgorithmData(string name, bool isRawData = true)
         {
-            return _algorithmDatas.TryGetValue(name, out var data) ? data : null;
+            var datas = isRawData ? _rawAlgorithmDatas : _voidAlgorithmDatas;
+            return datas.TryGetValue(name, out var data) ? data : null;
         }
 
-        public List<AlgorithmDatas> GetAllAlgorithmDatas()
+        public List<AlgorithmDatas> GetAllAlgorithmDatas(bool isRawData = true)
         {
-            return _algorithmDatas.Values.ToList();
+            return (isRawData ? _rawAlgorithmDatas : _voidAlgorithmDatas).Values.ToList();
         }
 
-        public void ClearAlgorithmDatas()
+        public void ClearAlgorithmDatas(bool isRawData = true)
         {
-            _algorithmDatas.Clear();
+            if (isRawData)
+                _rawAlgorithmDatas.Clear();
+            else
+                _voidAlgorithmDatas.Clear();
+        }
+
+        public void ClearAllAlgorithmDatas()
+        {
+            _rawAlgorithmDatas.Clear();
+            _voidAlgorithmDatas.Clear();
         }
     }
 } 

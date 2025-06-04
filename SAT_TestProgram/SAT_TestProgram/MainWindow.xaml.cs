@@ -198,33 +198,34 @@ namespace SAT_TestProgram
         private void BtnClearRawData_Click(object sender, RoutedEventArgs e)
         {
             _rawSignalData = null;
+            _dataManager.ClearAlgorithmDatas(true);  // Clear raw data algorithms
             plotUpper.Plot.Clear();
-            plotUpper.Plot.Title("Raw Signal");
             plotUpper.Refresh();
+            UpdatePreviewPlot();
         }
 
         private void BtnClearVoidData_Click(object sender, RoutedEventArgs e)
         {
             _voidSignalData = null;
+            _dataManager.ClearAlgorithmDatas(false);  // Clear void data algorithms
             plotLower.Plot.Clear();
-            plotLower.Plot.Title("Void Signal");
             plotLower.Refresh();
+            UpdatePreviewPlot();
         }
 
         private void Algorithm_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
             {
-                string algorithmName = button.Content.ToString();
-                if (_dataManager.CurrentData != null)
-                {
-                    _appliedAlgorithms.Add(algorithmName);
-                    ProcessData(algorithmName);
-                }
-                else
+                var currentData = chkRawSignal.IsChecked == true ? _rawSignalData : _voidSignalData;
+                if (currentData == null)
                 {
                     System.Windows.MessageBox.Show("데이터를 먼저 로드해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
                 }
+
+                string algorithmName = button.Content.ToString();
+                ProcessData(algorithmName);
             }
         }
 
@@ -232,14 +233,18 @@ namespace SAT_TestProgram
         {
             try
             {
-                if (_rawSignalData == null)
+                // 현재 선택된 데이터 확인
+                var currentData = chkRawSignal.IsChecked == true ? _rawSignalData : _voidSignalData;
+                bool isRawData = chkRawSignal.IsChecked == true;
+
+                if (currentData == null)
                 {
-                    System.Windows.MessageBox.Show("Raw 데이터를 먼저 로드해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                    System.Windows.MessageBox.Show("데이터를 먼저 로드해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
 
                 float[] processedData = null;
-                float[] inputData = _rawSignalData.YData.ToArray();
+                float[] inputData = currentData.YData.ToArray();
 
                 switch (algorithmName)
                 {
@@ -253,27 +258,27 @@ namespace SAT_TestProgram
                         processedData = _signalProcessor.FDomainFilterWithEnvelope(inputData);
                         break;
                     case "BScanNorm":
-                        if (_rawSignalData.Gates == null || _rawSignalData.Gates.Count == 0)
+                        if (currentData.Gates == null || currentData.Gates.Count == 0)
                         {
                             System.Windows.MessageBox.Show("게이트를 먼저 설정해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
                             return;
                         }
-                        processedData = _signalProcessor.BScanNormalization(inputData, _rawSignalData.Gates[0], 0.4f);
+                        processedData = _signalProcessor.BScanNormalization(inputData, currentData.Gates[0], 0.4f);
                         break;
                     case "CScanNorm":
-                        if (_rawSignalData.Gates == null || _rawSignalData.Gates.Count == 0)
+                        if (currentData.Gates == null || currentData.Gates.Count == 0)
                         {
                             System.Windows.MessageBox.Show("게이트를 먼저 설정해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
                             return;
                         }
-                        var normalizedValues = _signalProcessor.CScanNormalization(inputData, _rawSignalData.Gates, _rawSignalData.FirstMaxIndex);
+                        var normalizedValues = _signalProcessor.CScanNormalization(inputData, currentData.Gates, currentData.FirstMaxIndex);
                         processedData = normalizedValues.ToArray();
                         break;
                 }
 
                 if (processedData != null)
                 {
-                    UpdateProcessedData(algorithmName, processedData);
+                    UpdateProcessedData(algorithmName, processedData, isRawData);
                 }
             }
             catch (Exception ex)
@@ -282,28 +287,57 @@ namespace SAT_TestProgram
             }
         }
 
-        private void UpdateProcessedData(string algorithmName, float[] processedData)
+        private void UpdateProcessedData(string algorithmName, float[] processedData, bool isRawData)
         {
             try
             {
+                var currentData = isRawData ? _rawSignalData : _voidSignalData;
+
                 // Create new AlgorithmDatas instance
                 var algorithmData = new AlgorithmDatas
                 {
                     Name = algorithmName,
-                    XData = _rawSignalData.XData.ToArray(),
+                    XData = currentData.XData.ToArray(),
                     YData = processedData,
-                    Gates = _rawSignalData.Gates?.ToList(),
-                    FirstMaxIndex = _rawSignalData.FirstMaxIndex
+                    Gates = currentData.Gates?.ToList(),
+                    FirstMaxIndex = currentData.FirstMaxIndex
                 };
 
                 // Add to DataManager
-                _dataManager.AddAlgorithmData(algorithmData);
+                _dataManager.AddAlgorithmData(algorithmData, isRawData);
 
-                // Update raw signal data with processed data
-                _rawSignalData.YData = processedData;
-                
-                // Update plot
-                UpdatePlots(_rawSignalData);
+                // Update plot (원본 데이터는 유지)
+                var plot = isRawData ? plotUpper.Plot : plotLower.Plot;
+                plot.Clear();
+
+                // Plot original data
+                double[] originalX = currentData.XData.Select(x => (double)x).ToArray();
+                double[] originalY = currentData.YData.Select(y => (double)y).ToArray();
+                var originalScatter = plot.AddScatter(originalX, originalY, label: "Original");
+
+                // Plot all algorithm results
+                var algorithmDatas = _dataManager.GetAllAlgorithmDatas(isRawData);
+                foreach (var algData in algorithmDatas)
+                {
+                    double[] algXData = algData.XData.Select(x => (double)x).ToArray();
+                    double[] algYData = algData.YData.Select(y => (double)y).ToArray();
+                    plot.AddScatter(algXData, algYData, label: algData.Name);
+                }
+
+                // Show legend
+                plot.Legend();
+
+                // Store scatter plot reference
+                if (isRawData)
+                    rawScatter = originalScatter;
+                else
+                    voidScatter = originalScatter;
+
+                // Refresh the plot
+                if (isRawData)
+                    plotUpper.Refresh();
+                else
+                    plotLower.Refresh();
                 
                 // Add algorithm name to the list if not already present
                 if (!_appliedAlgorithms.Contains(algorithmName))
@@ -341,28 +375,25 @@ namespace SAT_TestProgram
                     label: "Original"
                 );
 
-                // If this is raw signal data, also plot algorithm results
-                if (data == _rawSignalData)
+                // Plot algorithm results
+                var algorithmDatas = _dataManager.GetAllAlgorithmDatas(data == _rawSignalData);
+                foreach (var algData in algorithmDatas)
                 {
-                    var algorithmDatas = _dataManager.GetAllAlgorithmDatas();
-                    foreach (var algData in algorithmDatas)
-                    {
-                        // Convert algorithm data arrays to double
-                        double[] algXData = algData.XData.Select(x => (double)x).ToArray();
-                        double[] algYData = algData.YData.Select(y => (double)y).ToArray();
+                    // Convert algorithm data arrays to double
+                    double[] algXData = algData.XData.Select(x => (double)x).ToArray();
+                    double[] algYData = algData.YData.Select(y => (double)y).ToArray();
 
-                        var algScatter = plot.AddScatter(
-                            algXData,
-                            algYData,
-                            label: algData.Name
-                        );
-                    }
+                    var algScatter = plot.AddScatter(
+                        algXData,
+                        algYData,
+                        label: algData.Name
+                    );
+                }
 
-                    // Show legend if there are algorithm results
-                    if (algorithmDatas.Any())
-                    {
-                        plot.Legend();
-                    }
+                // Show legend if there are algorithm results
+                if (algorithmDatas.Any())
+                {
+                    plot.Legend();
                 }
 
                 // Store scatter plot reference
@@ -432,9 +463,8 @@ namespace SAT_TestProgram
                 {
                     plotPreview.Plot.Clear();
 
-                    // Convert seconds to nanoseconds for display
-                    double[] xData = _dataManager.CurrentData.Second
-                        .Select(s => s * ConstValue.TimeUnit.SecondToNanosecond).ToArray();
+                    // 이미 나노초로 변환되어 있으므로 추가 변환 불필요
+                    double[] xData = _dataManager.CurrentData.Second;
 
                     // Plot the full data range
                     plotPreview.Plot.AddScatter(xData, _dataManager.CurrentData.Volt, System.Drawing.Color.Gray, 1, 3);
@@ -507,9 +537,9 @@ namespace SAT_TestProgram
         {
             if (data?.Volt != null && data.Volt.Length > 0 && data.Second != null)
             {
-                // X축 범위 설정 (시간 - 나노초 단위)
-                double xMin = data.Second[0] * ConstValue.TimeUnit.SecondToNanosecond;
-                double xMax = data.Second[data.Second.Length - 1] * ConstValue.TimeUnit.SecondToNanosecond;
+                // X축 범위 설정 (이미 나노초 단위)
+                double xMin = data.Second[0];
+                double xMax = data.Second[data.Second.Length - 1];
                 
                 rangeSliderX.Minimum = xMin;
                 rangeSliderX.Maximum = xMax;
@@ -594,80 +624,184 @@ namespace SAT_TestProgram
         #region Algorithm Button Events
         private void BtnFDomainFilter_Click(object sender, RoutedEventArgs e)
         {
-            if (chkRawSignal.IsChecked == true && _rawSignalData?.Volt != null)
+            bool processedAny = false;
+
+            // Raw Signal 처리
+            if (chkRawSignal.IsChecked == true && _rawSignalData?.YData != null)
             {
-                float[] processedData = _signalProcessor.FDomainFilter(_signalProcessor.ConvertToFloat(_rawSignalData.Volt));
-                UpdateProcessedData("FDomain Filter", processedData);
+                float[] processedData = _signalProcessor.FDomainFilter(_rawSignalData.YData);
+                UpdateProcessedData("FDomain Filter", processedData, true);
+                processedAny = true;
+            }
+
+            // Void Signal 처리
+            if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
+            {
+                float[] processedData = _signalProcessor.FDomainFilter(_voidSignalData.YData);
+                UpdateProcessedData("FDomain Filter", processedData, false);
+                processedAny = true;
+            }
+
+            // 둘 다 처리되지 않은 경우
+            if (!processedAny)
+            {
+                System.Windows.MessageBox.Show("처리할 데이터가 없습니다. 데이터를 로드하고 체크박스를 선택해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
 
         private void BtnExtractEnvelope_Click(object sender, RoutedEventArgs e)
         {
-            if (chkRawSignal.IsChecked == true && _rawSignalData?.Volt != null)
+            bool processedAny = false;
+
+            // Raw Signal 처리
+            if (chkRawSignal.IsChecked == true && _rawSignalData?.YData != null)
             {
-                float[] processedData = _signalProcessor.ExtractEnvelope(_signalProcessor.ConvertToFloat(_rawSignalData.Volt));
-                UpdateProcessedData("Envelope", processedData);
+                float[] processedData = _signalProcessor.ExtractEnvelope(_rawSignalData.YData);
+                UpdateProcessedData("Envelope", processedData, true);
+                processedAny = true;
+            }
+
+            // Void Signal 처리
+            if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
+            {
+                float[] processedData = _signalProcessor.ExtractEnvelope(_voidSignalData.YData);
+                UpdateProcessedData("Envelope", processedData, false);
+                processedAny = true;
+            }
+
+            // 둘 다 처리되지 않은 경우
+            if (!processedAny)
+            {
+                System.Windows.MessageBox.Show("처리할 데이터가 없습니다. 데이터를 로드하고 체크박스를 선택해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
 
         private void BtnFilterWithEnvelope_Click(object sender, RoutedEventArgs e)
         {
-            if (chkRawSignal.IsChecked == true && _rawSignalData?.Volt != null)
+            bool processedAny = false;
+
+            // Raw Signal 처리
+            if (chkRawSignal.IsChecked == true && _rawSignalData?.YData != null)
             {
-                float[] processedData = _signalProcessor.FDomainFilterWithEnvelope(_signalProcessor.ConvertToFloat(_rawSignalData.Volt));
-                UpdateProcessedData("Filter+Envelope", processedData);
+                float[] processedData = _signalProcessor.FDomainFilterWithEnvelope(_rawSignalData.YData);
+                UpdateProcessedData("Filter+Envelope", processedData, true);
+                processedAny = true;
+            }
+
+            // Void Signal 처리
+            if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
+            {
+                float[] processedData = _signalProcessor.FDomainFilterWithEnvelope(_voidSignalData.YData);
+                UpdateProcessedData("Filter+Envelope", processedData, false);
+                processedAny = true;
+            }
+
+            // 둘 다 처리되지 않은 경우
+            if (!processedAny)
+            {
+                System.Windows.MessageBox.Show("처리할 데이터가 없습니다. 데이터를 로드하고 체크박스를 선택해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
 
         private void BtnBScanNorm_Click(object sender, RoutedEventArgs e)
         {
-            if (chkRawSignal.IsChecked == true && _rawSignalData?.Volt != null)
+            bool processedAny = false;
+
+            // Raw Signal 처리
+            if (chkRawSignal.IsChecked == true && _rawSignalData?.YData != null)
             {
-                // Create a gate for the entire signal
-                var gate = new SignalProcessor.Gate(0, _rawSignalData.Volt.Length - 1);
-                float[] processedData = _signalProcessor.BScanNormalization(
-                    _signalProcessor.ConvertToFloat(_rawSignalData.Volt),
-                    gate,
-                    0.5f  // threshold ratio
-                );
-                UpdateProcessedData("B-Scan Norm", processedData);
+                if (_rawSignalData.Gates == null || _rawSignalData.Gates.Count == 0)
+                {
+                    System.Windows.MessageBox.Show("Raw Signal의 게이트를 먼저 설정해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    float[] processedData = _signalProcessor.BScanNormalization(
+                        _rawSignalData.YData,
+                        _rawSignalData.Gates[0],
+                        0.5f
+                    );
+                    UpdateProcessedData("B-Scan Norm", processedData, true);
+                    processedAny = true;
+                }
+            }
+
+            // Void Signal 처리
+            if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
+            {
+                if (_voidSignalData.Gates == null || _voidSignalData.Gates.Count == 0)
+                {
+                    System.Windows.MessageBox.Show("Void Signal의 게이트를 먼저 설정해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    float[] processedData = _signalProcessor.BScanNormalization(
+                        _voidSignalData.YData,
+                        _voidSignalData.Gates[0],
+                        0.5f
+                    );
+                    UpdateProcessedData("B-Scan Norm", processedData, false);
+                    processedAny = true;
+                }
+            }
+
+            // 둘 다 처리되지 않은 경우
+            if (!processedAny)
+            {
+                System.Windows.MessageBox.Show("처리할 데이터가 없습니다. 데이터를 로드하고 체크박스를 선택해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
 
         private void BtnCScanNorm_Click(object sender, RoutedEventArgs e)
         {
-            if (chkRawSignal.IsChecked == true && _rawSignalData?.Volt != null)
+            bool processedAny = false;
+
+            // Raw Signal 처리
+            if (chkRawSignal.IsChecked == true && _rawSignalData?.YData != null)
             {
-                // Create sample gates (you might want to make these configurable)
-                var gates = new List<SignalProcessor.Gate>
+                if (_rawSignalData.Gates == null || _rawSignalData.Gates.Count == 0)
                 {
-                    new SignalProcessor.Gate(0, _rawSignalData.Volt.Length / 3),
-                    new SignalProcessor.Gate(_rawSignalData.Volt.Length / 3, 2 * _rawSignalData.Volt.Length / 3),
-                    new SignalProcessor.Gate(2 * _rawSignalData.Volt.Length / 3, _rawSignalData.Volt.Length - 1)
-                };
-
-                List<float> normalizedValues = _signalProcessor.CScanNormalization(
-                    _signalProcessor.ConvertToFloat(_rawSignalData.Volt),
-                    gates,
-                    0  // origin first max index
-                );
-
-                // Convert normalized values to a signal
-                float[] processedData = new float[_rawSignalData.Volt.Length];
-                for (int i = 0; i < normalizedValues.Count; i++)
-                {
-                    int start = gates[i].StartIndex;
-                    int end = gates[i].EndIndex;
-                    for (int j = start; j <= end; j++)
-                    {
-                        processedData[j] = normalizedValues[i];
-                    }
+                    System.Windows.MessageBox.Show("Raw Signal의 게이트를 먼저 설정해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
+                else
+                {
+                    float[] processedData = _signalProcessor.CScanNormalization(
+                        _rawSignalData.YData,
+                        _rawSignalData.Gates,
+                        _rawSignalData.FirstMaxIndex
+                    ).ToArray();
+                    UpdateProcessedData("C-Scan Norm", processedData, true);
+                    processedAny = true;
+                }
+            }
 
-                UpdateProcessedData("C-Scan Norm", processedData);
+            // Void Signal 처리
+            if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
+            {
+                if (_voidSignalData.Gates == null || _voidSignalData.Gates.Count == 0)
+                {
+                    System.Windows.MessageBox.Show("Void Signal의 게이트를 먼저 설정해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    float[] processedData = _signalProcessor.CScanNormalization(
+                        _voidSignalData.YData,
+                        _voidSignalData.Gates,
+                        _voidSignalData.FirstMaxIndex
+                    ).ToArray();
+                    UpdateProcessedData("C-Scan Norm", processedData, false);
+                    processedAny = true;
+                }
+            }
+
+            // 둘 다 처리되지 않은 경우
+            if (!processedAny)
+            {
+                System.Windows.MessageBox.Show("처리할 데이터가 없습니다. 데이터를 로드하고 체크박스를 선택해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
         #endregion
     }
 }
+
 
