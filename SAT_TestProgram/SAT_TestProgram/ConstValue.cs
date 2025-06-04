@@ -4,6 +4,12 @@ namespace SAT_TestProgram
 {
     public static class ConstValue
     {
+        // Time Unit Conversion Constants
+        public static class TimeUnit
+        {
+            public const double SecondToNanosecond = 1e9; // 1 second = 1,000,000,000 nanoseconds
+        }
+
         // Plot Axis Default Values
         public static class PlotAxis
         {

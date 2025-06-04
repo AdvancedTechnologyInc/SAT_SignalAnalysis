@@ -122,7 +122,7 @@ namespace SAT_TestProgram.Data
                 for (int i = 0; i < validData.Count; i++)
                 {
                     data.DataIndex[i] = i;
-                    data.Second[i] = validData[i].time;
+                    data.Second[i] = validData[i].time;  // Keep original seconds
                     data.Volt[i] = validData[i].voltage;
                 }
 

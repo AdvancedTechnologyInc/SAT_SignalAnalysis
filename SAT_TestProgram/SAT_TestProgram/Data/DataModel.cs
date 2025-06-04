@@ -12,6 +12,8 @@ namespace SAT_TestProgram.Data
     /// </summary>
     public class DataModel
     {
+        // 파일 이름
+        public string FileName { get; set; }
 
         // 데이터 개수
         public int DataNum { get; set; }
@@ -31,6 +33,7 @@ namespace SAT_TestProgram.Data
         /// </summary>
         public DataModel()
         {
+            FileName = string.Empty;
             DataNum = 0;
             DataIndex = Array.Empty<int>();
             Second = Array.Empty<double>();
