@@ -13,6 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using SAT_TestProgram.Data;
+using SAT_TestProgram.Models;
 using System.Windows.Threading;
 using ScottPlot;
 using ScottPlot.WPF;
@@ -21,15 +22,17 @@ using Microsoft.Win32;
 using System.IO;
 using ScottPlot.Plottable;
 using Xceed.Wpf.Toolkit;
+using MathNet.Numerics;
 
 namespace SAT_TestProgram
 {
     /// <summary>
     /// MainWindow.xaml에 대한 상호 작용 논리
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : System.Windows.Window
     {
         private readonly DataManager _dataManager;
+        private readonly SignalProcessor _signalProcessor;
         private DataModel _rawSignalData;
         private DataModel _voidSignalData;
         private ObservableCollection<string> _appliedAlgorithms;
@@ -40,6 +43,7 @@ namespace SAT_TestProgram
         {
             InitializeComponent();
             _dataManager = DataManager.Instance;
+            _signalProcessor = new SignalProcessor();
 
             // Initialize variables
             _rawSignalData = null;
@@ -226,134 +230,179 @@ namespace SAT_TestProgram
 
         private void ProcessData(string algorithmName)
         {
-            if (_dataManager.CurrentData == null) return;
-
-            var currentData = _dataManager.CurrentData;
-            double[] processedData = null;
-
-            // 알고리즘에 따른 데이터 처리 로직
-            switch (algorithmName)
+            try
             {
-                case "Algorithm 1":
-                    processedData = currentData.Volt.Select(x => x * ConstValue.AlgorithmFactors.Algorithm1Factor).ToArray();
-                    break;
-                case "Algorithm 2":
-                    processedData = currentData.Volt.Select(x => x * ConstValue.AlgorithmFactors.Algorithm2Factor).ToArray();
-                    break;
-                case "Algorithm 3":
-                    processedData = currentData.Volt.Select(x => x + ConstValue.AlgorithmFactors.Algorithm3Offset).ToArray();
-                    break;
-                case "Algorithm 4":
-                    processedData = currentData.Volt.Select(x => x + ConstValue.AlgorithmFactors.Algorithm4Offset).ToArray();
-                    break;
-                case "Algorithm 5":
-                    processedData = currentData.Volt.Select(x => x * x).ToArray();
-                    break;
-            }
-
-            if (processedData != null)
-            {
-                var processedModel = new DataModel
+                if (_rawSignalData == null)
                 {
-                    DataNum = currentData.DataNum,
-                    DataIndex = (int[])currentData.DataIndex.Clone(),
-                    Second = (double[])currentData.Second.Clone(),
-                    Volt = processedData
+                    System.Windows.MessageBox.Show("Raw 데이터를 먼저 로드해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                float[] processedData = null;
+                float[] inputData = _rawSignalData.YData.ToArray();
+
+                switch (algorithmName)
+                {
+                    case "FDomainFilter":
+                        processedData = _signalProcessor.FDomainFilter(inputData);
+                        break;
+                    case "ExtractEnvelope":
+                        processedData = _signalProcessor.ExtractEnvelope(inputData);
+                        break;
+                    case "FilterWithEnvelope":
+                        processedData = _signalProcessor.FDomainFilterWithEnvelope(inputData);
+                        break;
+                    case "BScanNorm":
+                        if (_rawSignalData.Gates == null || _rawSignalData.Gates.Count == 0)
+                        {
+                            System.Windows.MessageBox.Show("게이트를 먼저 설정해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                            return;
+                        }
+                        processedData = _signalProcessor.BScanNormalization(inputData, _rawSignalData.Gates[0], 0.4f);
+                        break;
+                    case "CScanNorm":
+                        if (_rawSignalData.Gates == null || _rawSignalData.Gates.Count == 0)
+                        {
+                            System.Windows.MessageBox.Show("게이트를 먼저 설정해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                            return;
+                        }
+                        var normalizedValues = _signalProcessor.CScanNormalization(inputData, _rawSignalData.Gates, _rawSignalData.FirstMaxIndex);
+                        processedData = normalizedValues.ToArray();
+                        break;
+                }
+
+                if (processedData != null)
+                {
+                    UpdateProcessedData(algorithmName, processedData);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"데이터 처리 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void UpdateProcessedData(string algorithmName, float[] processedData)
+        {
+            try
+            {
+                // Create new AlgorithmDatas instance
+                var algorithmData = new AlgorithmDatas
+                {
+                    Name = algorithmName,
+                    XData = _rawSignalData.XData.ToArray(),
+                    YData = processedData,
+                    Gates = _rawSignalData.Gates?.ToList(),
+                    FirstMaxIndex = _rawSignalData.FirstMaxIndex
                 };
 
-                if (processedModel.DataIndex.Length > 0)
-                {
-                    _dataManager.UpdateProcessedData(processedModel.DataIndex[0], algorithmName, processedData);
-                }
+                // Add to DataManager
+                _dataManager.AddAlgorithmData(algorithmData);
+
+                // Update raw signal data with processed data
+                _rawSignalData.YData = processedData;
                 
-                _voidSignalData = processedModel;
-                UpdatePlots(processedModel);
+                // Update plot
+                UpdatePlots(_rawSignalData);
+                
+                // Add algorithm name to the list if not already present
+                if (!_appliedAlgorithms.Contains(algorithmName))
+                {
+                    _appliedAlgorithms.Add(algorithmName);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"처리된 데이터 업데이트 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
         private void UpdatePlots(DataModel data)
         {
-            if (plotUpper != null)
+            try
             {
-                // 상단 그래프 업데이트 (Raw Signal)
-                plotUpper.Plot.Clear();
-                if (chkRawSignal.IsChecked == true && _rawSignalData != null)
+                if (data == null) return;
+
+                var plot = data == _rawSignalData ? plotUpper.Plot : plotLower.Plot;
+                plot.Clear();
+
+                // Set plot title using the file name without extension
+                string title = string.IsNullOrEmpty(data.FileName) ? "Signal" : data.FileName;
+                plot.Title(title);
+
+                // Convert float arrays to double arrays for plotting
+                double[] xData = data.XData.Select(x => (double)x).ToArray();
+                double[] yData = data.YData.Select(y => (double)y).ToArray();
+
+                // Plot the main signal data
+                var scatter = plot.AddScatter(
+                    xData,
+                    yData,
+                    label: "Original"
+                );
+
+                // If this is raw signal data, also plot algorithm results
+                if (data == _rawSignalData)
                 {
-                    if (_rawSignalData.Volt != null && _rawSignalData.Volt.Length > 0 && _rawSignalData.Second != null)
+                    var algorithmDatas = _dataManager.GetAllAlgorithmDatas();
+                    foreach (var algData in algorithmDatas)
                     {
-                        // Convert seconds to nanoseconds only for display
-                        double[] dataX = _rawSignalData.Second.Select(s => s * ConstValue.TimeUnit.SecondToNanosecond).ToArray();
-                        rawScatter = plotUpper.Plot.AddScatter(dataX, _rawSignalData.Volt);
-                        
-                        // Set axis limits based on actual time range
-                        double xMin = _rawSignalData.Second[0] * ConstValue.TimeUnit.SecondToNanosecond;
-                        double xMax = _rawSignalData.Second[_rawSignalData.Second.Length - 1] * ConstValue.TimeUnit.SecondToNanosecond;
-                        double yMin = _rawSignalData.Volt.Min();
-                        double yMax = _rawSignalData.Volt.Max();
+                        // Convert algorithm data arrays to double
+                        double[] algXData = algData.XData.Select(x => (double)x).ToArray();
+                        double[] algYData = algData.YData.Select(y => (double)y).ToArray();
 
-                        // Add some padding for y-axis only (5% of the range)
-                        double yPadding = (yMax - yMin) * 0.05;
-
-                        plotUpper.Plot.SetAxisLimits(
-                            xMin: xMin,
-                            xMax: xMax,
-                            yMin: yMin - yPadding,
-                            yMax: yMax + yPadding
+                        var algScatter = plot.AddScatter(
+                            algXData,
+                            algYData,
+                            label: algData.Name
                         );
-                        
-                        // Update plot title with file name
-                        if (!string.IsNullOrEmpty(_rawSignalData.FileName))
-                        {
-                            plotUpper.Plot.Title(_rawSignalData.FileName);
-                        }
+                    }
+
+                    // Show legend if there are algorithm results
+                    if (algorithmDatas.Any())
+                    {
+                        plot.Legend();
                     }
                 }
-                plotUpper.Refresh();
-            }
 
-            // Check if void signal data exists
-            if (_voidSignalData?.Volt != null && _voidSignalData.Volt.Length > 0)
-            {
-                // 하단 그래프 업데이트 (Void Signal)
-                plotLower.Plot.Clear();
-                if (chkProcessedSignal.IsChecked == true)
+                // Store scatter plot reference
+                if (data == _rawSignalData)
+                    rawScatter = scatter;
+                else
+                    voidScatter = scatter;
+
+                // Update axis limits
+                if (data.XData.Length > 0 && data.YData.Length > 0)
                 {
-                    if (_voidSignalData.Second != null)
-                    {
-                        // Convert seconds to nanoseconds only for display
-                        double[] dataX = _voidSignalData.Second.Select(s => s * ConstValue.TimeUnit.SecondToNanosecond).ToArray();
-                        voidScatter = plotLower.Plot.AddScatter(dataX, _voidSignalData.Volt);
-                        
-                        // Set axis limits based on actual time range
-                        double xMin = _voidSignalData.Second[0] * ConstValue.TimeUnit.SecondToNanosecond;
-                        double xMax = _voidSignalData.Second[_voidSignalData.Second.Length - 1] * ConstValue.TimeUnit.SecondToNanosecond;
-                        double yMin = _voidSignalData.Volt.Min();
-                        double yMax = _voidSignalData.Volt.Max();
+                    double xMin = data.XData.Min();
+                    double xMax = data.XData.Max();
+                    double yMin = data.YData.Min();
+                    double yMax = data.YData.Max();
 
-                        // Add some padding for y-axis only (5% of the range)
-                        double yPadding = (yMax - yMin) * 0.05;
+                    // Add some padding
+                    double xPadding = (xMax - xMin) * 0.05;
+                    double yPadding = (yMax - yMin) * 0.05;
 
-                        plotLower.Plot.SetAxisLimits(
-                            xMin: xMin,
-                            xMax: xMax,
-                            yMin: yMin - yPadding,
-                            yMax: yMax + yPadding
-                        );
-                        
-                        // Update plot title with file name
-                        if (!string.IsNullOrEmpty(_voidSignalData.FileName))
-                        {
-                            plotLower.Plot.Title(_voidSignalData.FileName);
-                        }
-                    }
+                    plot.SetAxisLimits(
+                        xMin: xMin - xPadding,
+                        xMax: xMax + xPadding,
+                        yMin: yMin - yPadding,
+                        yMax: yMax + yPadding
+                    );
                 }
-                plotLower.Refresh();
-            }
 
-            // Update preview plot if data exists
-            if (data?.Volt != null && data.Volt.Length > 0)
-            {
+                // Refresh the plot
+                if (data == _rawSignalData)
+                    plotUpper.Refresh();
+                else
+                    plotLower.Refresh();
+
+                // Update preview plot if needed
                 UpdatePreviewPlot();
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"플롯 업데이트 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -541,6 +590,84 @@ namespace SAT_TestProgram
                 }
             }
         }
+
+        #region Algorithm Button Events
+        private void BtnFDomainFilter_Click(object sender, RoutedEventArgs e)
+        {
+            if (chkRawSignal.IsChecked == true && _rawSignalData?.Volt != null)
+            {
+                float[] processedData = _signalProcessor.FDomainFilter(_signalProcessor.ConvertToFloat(_rawSignalData.Volt));
+                UpdateProcessedData("FDomain Filter", processedData);
+            }
+        }
+
+        private void BtnExtractEnvelope_Click(object sender, RoutedEventArgs e)
+        {
+            if (chkRawSignal.IsChecked == true && _rawSignalData?.Volt != null)
+            {
+                float[] processedData = _signalProcessor.ExtractEnvelope(_signalProcessor.ConvertToFloat(_rawSignalData.Volt));
+                UpdateProcessedData("Envelope", processedData);
+            }
+        }
+
+        private void BtnFilterWithEnvelope_Click(object sender, RoutedEventArgs e)
+        {
+            if (chkRawSignal.IsChecked == true && _rawSignalData?.Volt != null)
+            {
+                float[] processedData = _signalProcessor.FDomainFilterWithEnvelope(_signalProcessor.ConvertToFloat(_rawSignalData.Volt));
+                UpdateProcessedData("Filter+Envelope", processedData);
+            }
+        }
+
+        private void BtnBScanNorm_Click(object sender, RoutedEventArgs e)
+        {
+            if (chkRawSignal.IsChecked == true && _rawSignalData?.Volt != null)
+            {
+                // Create a gate for the entire signal
+                var gate = new SignalProcessor.Gate(0, _rawSignalData.Volt.Length - 1);
+                float[] processedData = _signalProcessor.BScanNormalization(
+                    _signalProcessor.ConvertToFloat(_rawSignalData.Volt),
+                    gate,
+                    0.5f  // threshold ratio
+                );
+                UpdateProcessedData("B-Scan Norm", processedData);
+            }
+        }
+
+        private void BtnCScanNorm_Click(object sender, RoutedEventArgs e)
+        {
+            if (chkRawSignal.IsChecked == true && _rawSignalData?.Volt != null)
+            {
+                // Create sample gates (you might want to make these configurable)
+                var gates = new List<SignalProcessor.Gate>
+                {
+                    new SignalProcessor.Gate(0, _rawSignalData.Volt.Length / 3),
+                    new SignalProcessor.Gate(_rawSignalData.Volt.Length / 3, 2 * _rawSignalData.Volt.Length / 3),
+                    new SignalProcessor.Gate(2 * _rawSignalData.Volt.Length / 3, _rawSignalData.Volt.Length - 1)
+                };
+
+                List<float> normalizedValues = _signalProcessor.CScanNormalization(
+                    _signalProcessor.ConvertToFloat(_rawSignalData.Volt),
+                    gates,
+                    0  // origin first max index
+                );
+
+                // Convert normalized values to a signal
+                float[] processedData = new float[_rawSignalData.Volt.Length];
+                for (int i = 0; i < normalizedValues.Count; i++)
+                {
+                    int start = gates[i].StartIndex;
+                    int end = gates[i].EndIndex;
+                    for (int j = start; j <= end; j++)
+                    {
+                        processedData[j] = normalizedValues[i];
+                    }
+                }
+
+                UpdateProcessedData("C-Scan Norm", processedData);
+            }
+        }
+        #endregion
     }
 }
 

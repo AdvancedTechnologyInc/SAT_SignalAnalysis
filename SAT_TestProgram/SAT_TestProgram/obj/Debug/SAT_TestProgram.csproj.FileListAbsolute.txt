@@ -75,3 +75,6 @@ C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestPr
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\obj\Debug\SAT_TestProgram.csproj.CopyComplete
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\obj\Debug\SAT_TestProgram.exe
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\obj\Debug\SAT_TestProgram.pdb
+C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\obj\Debug\SAT_TestProgram.exe.config
+C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\bin\Debug\MathNet.Numerics.dll
+C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\bin\Debug\MathNet.Numerics.xml

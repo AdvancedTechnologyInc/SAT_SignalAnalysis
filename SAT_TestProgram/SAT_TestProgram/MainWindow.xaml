@@ -335,6 +335,17 @@
                         </StackPanel>
                     </StackPanel>
                 </GroupBox>
+
+                <!-- Algorithm GroupBox -->
+                <GroupBox Header="Algorithm" Grid.Row="1" Grid.Column="2" Margin="5">
+                    <StackPanel>
+                        <Button x:Name="btnFDomainFilter" Content="Frequency Domain Filter" Margin="2" Click="BtnFDomainFilter_Click"/>
+                        <Button x:Name="btnExtractEnvelope" Content="Extract Envelope" Margin="2" Click="BtnExtractEnvelope_Click"/>
+                        <Button x:Name="btnFilterWithEnvelope" Content="Filter with Envelope" Margin="2" Click="BtnFilterWithEnvelope_Click"/>
+                        <Button x:Name="btnBScanNorm" Content="B-Scan Normalization" Margin="2" Click="BtnBScanNorm_Click"/>
+                        <Button x:Name="btnCScanNorm" Content="C-Scan Normalization" Margin="2" Click="BtnCScanNorm_Click"/>
+                    </StackPanel>
+                </GroupBox>
             </Grid>
         </GroupBox>
     </Grid>

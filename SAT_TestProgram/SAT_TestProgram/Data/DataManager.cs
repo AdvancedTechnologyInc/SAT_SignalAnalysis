@@ -63,12 +63,15 @@ namespace SAT_TestProgram.Data
         /// </summary>
         public event EventHandler<DataModel> OnCurrentDataChanged;
 
+        private Dictionary<string, AlgorithmDatas> _algorithmDatas;
+
         /// <summary>
         /// DataManager 생성자 - private으로 선언하여 외부에서 인스턴스 생성을 막음
         /// </summary>
         private DataManager()
         {
             _dataSet = new List<DataModel>();
+            _algorithmDatas = new Dictionary<string, AlgorithmDatas>();
         }
 
         /// <summary>
@@ -80,57 +83,40 @@ namespace SAT_TestProgram.Data
         {
             try
             {
-                // CSV 파일 읽기
-                string[] lines = await Task.Run(() => File.ReadAllLines(filePath));
-                if (lines.Length <= 2) // 헤더와 최소 1개의 데이터가 필요
+                using (var reader = new StreamReader(filePath))
                 {
-                    throw new Exception("파일에 데이터가 없습니다.");
-                }
+                    string line;
+                    var dataIndex = new List<int>();
+                    var timeData = new List<double>();
+                    var voltData = new List<double>();
+                    var index = 0;
 
-                // 유효한 데이터 개수 계산 (2번째 행부터 시작)
-                var validData = new List<(double time, double voltage)>();
-                await Task.Run(() =>
-                {
-                    for (int i = 1; i < lines.Length; i++) // 2번째 행부터 시작
+                    // Skip header
+                    await reader.ReadLineAsync();
+
+                    while ((line = await reader.ReadLineAsync()) != null)
                     {
-                        var values = lines[i].Split(',');
-                        if (values.Length >= 2) // 시간, 전압 데이터가 필요
+                        var values = line.Split(',');
+                        if (values.Length >= 2 && double.TryParse(values[0], out double time) && double.TryParse(values[1], out double volt))
                         {
-                            if (double.TryParse(values[0], out double time) &&
-                                double.TryParse(values[1], out double voltage))
-                            {
-                                validData.Add((time, voltage));
-                            }
+                            dataIndex.Add(index++);
+                            timeData.Add(time);
+                            voltData.Add(volt);
                         }
                     }
-                });
 
-                // 유효한 데이터가 없는 경우
-                if (validData.Count == 0)
-                {
-                    throw new Exception("유효한 데이터가 없습니다.");
+                    CurrentData = new DataModel
+                    {
+                        DataNum = dataIndex.Count,
+                        DataIndex = dataIndex.ToArray(),
+                        Second = timeData.ToArray(),
+                        Volt = voltData.ToArray(),
+                        XData = timeData.Select(t => (float)t).ToArray(),
+                        YData = voltData.Select(v => (float)v).ToArray()
+                    };
+
+                    OnDataLoaded?.Invoke(this, CurrentData);
                 }
-
-                // 데이터 모델 생성 및 초기화
-                var data = new DataModel();
-                data.DataNum = validData.Count;
-                data.DataIndex = Enumerable.Range(0, validData.Count).ToArray();
-                data.Second = new double[validData.Count];
-                data.Volt = new double[validData.Count];
-
-                // 데이터 할당
-                for (int i = 0; i < validData.Count; i++)
-                {
-                    data.DataIndex[i] = i;
-                    data.Second[i] = validData[i].time;  // Keep original seconds
-                    data.Volt[i] = validData[i].voltage;
-                }
-
-                _dataSet.Add(data);
-                OnDataLoaded?.Invoke(this, data);
-                
-                // 새로 로드된 데이터를 현재 데이터로 설정
-                SetCurrentData(data);
             }
             catch (Exception ex)
             {
@@ -181,7 +167,7 @@ namespace SAT_TestProgram.Data
         /// <param name="algorithmName">적용된 알고리즘 이름</param>
         /// <param name="processedData">처리된 새 데이터</param>
         /// <exception cref="ArgumentException">데이터가 유효하지 않은 경우</exception>
-        public void UpdateProcessedData(int index, string algorithmName, double[] processedData)
+        public void UpdateProcessedData(int index, string algorithmName, float[] processedData)
         {
             if (string.IsNullOrEmpty(algorithmName))
             {
@@ -208,9 +194,16 @@ namespace SAT_TestProgram.Data
                 }
 
                 // 알고리즘 결과 생성 및 저장
-                var algorithmResult = new AlgorithmDatas(algorithmName, processedData.Length);
-                algorithmResult.ProcessData = (double[])processedData.Clone(); // 데이터 복사본 저장
+                var algorithmResult = new AlgorithmDatas(algorithmName, processedData.Length)
+                {
+                    Name = algorithmName,
+                    XData = data.XData.ToArray(),
+                    YData = processedData.ToArray(),
+                    Gates = data.Gates?.ToList(),
+                    FirstMaxIndex = data.FirstMaxIndex
+                };
 
+                _algorithmDatas[algorithmName] = algorithmResult;
                 OnDataProcessed?.Invoke(this, data);
             }
             catch (Exception ex)
@@ -225,11 +218,8 @@ namespace SAT_TestProgram.Data
         /// <param name="data">현재 데이터로 설정할 DataModel</param>
         public void SetCurrentData(DataModel data)
         {
-            if (data != CurrentData)
-            {
-                CurrentData = data;
-                OnCurrentDataChanged?.Invoke(this, data);
-            }
+            CurrentData = data;
+            OnCurrentDataChanged?.Invoke(this, data);
         }
 
         /// <summary>
@@ -240,6 +230,27 @@ namespace SAT_TestProgram.Data
             _dataSet.Clear();
             CurrentData = null;
             OnCurrentDataChanged?.Invoke(this, null);
+        }
+
+        public void AddAlgorithmData(AlgorithmDatas data)
+        {
+            if (data == null) return;
+            _algorithmDatas[data.Name] = data;
+        }
+
+        public AlgorithmDatas GetAlgorithmData(string name)
+        {
+            return _algorithmDatas.TryGetValue(name, out var data) ? data : null;
+        }
+
+        public List<AlgorithmDatas> GetAllAlgorithmDatas()
+        {
+            return _algorithmDatas.Values.ToList();
+        }
+
+        public void ClearAlgorithmDatas()
+        {
+            _algorithmDatas.Clear();
         }
     }
 } 

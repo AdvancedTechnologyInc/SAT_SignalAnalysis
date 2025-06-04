@@ -35,6 +35,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="MathNet.Numerics, Version=5.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\MathNet.Numerics.5.0.0\lib\net461\MathNet.Numerics.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />

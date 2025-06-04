@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SAT_TestProgram.Models;
 
 namespace SAT_TestProgram.Data
 {
@@ -12,29 +13,44 @@ namespace SAT_TestProgram.Data
     public class AlgorithmDatas
     {
         // 알고리즘 이름
-        public string Algorithm { get; set; }
+        public string Name { get; set; }
 
-        // 처리된 데이터 배열
-        public double[] ProcessData { get; set; }
+        // X축 데이터 (시간)
+        public float[] XData { get; set; }
+
+        // Y축 데이터 (전압)
+        public float[] YData { get; set; }
+
+        // 게이트 목록
+        public List<SignalProcessor.Gate> Gates { get; set; }
+
+        // 첫 번째 최대값의 인덱스
+        public int FirstMaxIndex { get; set; }
 
         /// <summary>
         /// 기본 생성자
         /// </summary>
         public AlgorithmDatas()
         {
-            Algorithm = string.Empty;
-            ProcessData = Array.Empty<double>();
+            Name = string.Empty;
+            XData = Array.Empty<float>();
+            YData = Array.Empty<float>();
+            Gates = new List<SignalProcessor.Gate>();
+            FirstMaxIndex = -1;
         }
 
         /// <summary>
         /// 데이터 초기화를 위한 생성자
         /// </summary>
-        /// <param name="algorithm">알고리즘 이름</param>
+        /// <param name="name">알고리즘 이름</param>
         /// <param name="dataLength">데이터 배열 길이</param>
-        public AlgorithmDatas(string algorithm, int dataLength)
+        public AlgorithmDatas(string name, int dataLength)
         {
-            Algorithm = algorithm;
-            ProcessData = new double[dataLength];
+            Name = name;
+            XData = new float[dataLength];
+            YData = new float[dataLength];
+            Gates = new List<SignalProcessor.Gate>();
+            FirstMaxIndex = -1;
         }
 
         /// <summary>
@@ -45,13 +61,19 @@ namespace SAT_TestProgram.Data
         {
             if (other != null)
             {
-                Algorithm = other.Algorithm;
-                ProcessData = other.ProcessData?.ToArray() ?? Array.Empty<double>();
+                Name = other.Name;
+                XData = other.XData?.ToArray() ?? Array.Empty<float>();
+                YData = other.YData?.ToArray() ?? Array.Empty<float>();
+                Gates = other.Gates?.ToList() ?? new List<SignalProcessor.Gate>();
+                FirstMaxIndex = other.FirstMaxIndex;
             }
             else
             {
-                Algorithm = string.Empty;
-                ProcessData = Array.Empty<double>();
+                Name = string.Empty;
+                XData = Array.Empty<float>();
+                YData = Array.Empty<float>();
+                Gates = new List<SignalProcessor.Gate>();
+                FirstMaxIndex = -1;
             }
         }
 
@@ -61,9 +83,10 @@ namespace SAT_TestProgram.Data
         /// <returns>데이터가 유효한지 여부</returns>
         public bool IsValid()
         {
-            return !string.IsNullOrEmpty(Algorithm) &&
-                   ProcessData != null &&
-                   ProcessData.Length > 0;
+            return !string.IsNullOrEmpty(Name) &&
+                   XData != null && XData.Length > 0 &&
+                   YData != null && YData.Length > 0 &&
+                   XData.Length == YData.Length;
         }
 
         /// <summary>
@@ -71,8 +94,11 @@ namespace SAT_TestProgram.Data
         /// </summary>
         public void Clear()
         {
-            Algorithm = string.Empty;
-            ProcessData = Array.Empty<double>();
+            Name = string.Empty;
+            XData = Array.Empty<float>();
+            YData = Array.Empty<float>();
+            Gates.Clear();
+            FirstMaxIndex = -1;
         }
     }
 }
