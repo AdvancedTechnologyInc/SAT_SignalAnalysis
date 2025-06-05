@@ -129,7 +129,7 @@ namespace SAT_TestProgram.Models
         #endregion
 
         #region Filter Methods
-        public float[] FDomainFilter(float[] inputSignal, double middleCutOffRatio = 0.3, double sideCutoffRatio = 0.03)
+        public float[] FDomainFilter(float[] inputSignal, double middleCutOffRatio = 0.2, double sideCutoffRatio = 0.02)
         {
             int n = inputSignal.Length;
             Complex[] complexSignal = new Complex[n];
