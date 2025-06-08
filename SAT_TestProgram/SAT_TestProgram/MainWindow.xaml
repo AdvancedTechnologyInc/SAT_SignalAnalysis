@@ -97,6 +97,18 @@
 
                             <!-- Algorithm Buttons -->
                             <StackPanel Grid.Column="0" Margin="5">
+                                <Button Content="Perform FFT" 
+                                        Margin="0,5" 
+                                        Padding="5"
+                                        Click="BtnPerformFFT_Click"/>
+                                <Button Content="Apply Frequency Filter" 
+                                        Margin="0,5" 
+                                        Padding="5"
+                                        Click="BtnApplyFrequencyFilter_Click"/>
+                                <Button Content="Perform IFFT" 
+                                        Margin="0,5" 
+                                        Padding="5"
+                                        Click="BtnPerformIFFT_Click"/>
                                 <Button Content="FDomain Filter" 
                                         Margin="0,5" 
                                         Padding="5"

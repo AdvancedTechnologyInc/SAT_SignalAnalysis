@@ -129,6 +129,120 @@ namespace SAT_TestProgram.Models
         #endregion
 
         #region Filter Methods
+        public (float[] magnitudeData, float[] frequencyAxis) PerformFFT(float[] inputSignal, float samplingRate = 100f)
+        {
+            int n = inputSignal.Length;
+            Complex[] complexSignal = new Complex[n];
+            for (int i = 0; i < n; i++) complexSignal[i] = new Complex(inputSignal[i], 0);
+
+            Fourier.Forward(complexSignal, FourierOptions.Matlab);
+
+            // 주파수 축 계산
+            float[] frequencyAxis = new float[n];
+            float df = samplingRate / n; // 주파수 해상도
+            for (int i = 0; i < n/2; i++)
+            {
+                frequencyAxis[i] = i * df;
+            }
+            for (int i = n/2; i < n; i++)
+            {
+                frequencyAxis[i] = (i - n) * df;
+            }
+
+            // Magnitude 스펙트럼 계산
+            float[] magnitudeSpectrum = new float[n];
+            for (int i = 0; i < n; i++)
+            {
+                magnitudeSpectrum[i] = (float)complexSignal[i].Magnitude;
+            }
+
+            return (magnitudeSpectrum, frequencyAxis);
+        }
+
+        public (float[] magnitudeData, float[] frequencyAxis) ApplyFrequencyFilter(float[] inputSignal, double middleCutOffRatio = 0.2, double sideCutoffRatio = 0.02, float samplingRate = 100f)
+        {
+            int n = inputSignal.Length;
+            Complex[] complexSignal = new Complex[n];
+            for (int i = 0; i < n; i++) complexSignal[i] = new Complex(inputSignal[i], 0);
+
+            Fourier.Forward(complexSignal, FourierOptions.Matlab);
+
+            int middleCutOffIndex = (int)(n * middleCutOffRatio / 2);
+            int sideCutOffIndex = (int)(n * sideCutoffRatio / 2);
+
+            // 주파수 축 계산
+            float[] frequencyAxis = new float[n];
+            float df = samplingRate / n;
+            for (int i = 0; i < n/2; i++)
+            {
+                frequencyAxis[i] = i * df;
+            }
+            for (int i = n/2; i < n; i++)
+            {
+                frequencyAxis[i] = (i - n) * df;
+            }
+
+            // 필터링 적용
+            for (int i = 0; i < n; i++)
+            {
+                if (!(sideCutOffIndex < i && i < middleCutOffIndex) &&
+                    !(n - middleCutOffIndex < i && i < n - sideCutOffIndex))
+                {
+                    complexSignal[i] = Complex.Zero;
+                }
+            }
+
+            // Magnitude 스펙트럼 계산
+            float[] magnitudeSpectrum = new float[n];
+            for (int i = 0; i < n; i++)
+            {
+                magnitudeSpectrum[i] = (float)complexSignal[i].Magnitude;
+            }
+
+            return (magnitudeSpectrum, frequencyAxis);
+        }
+
+        public (float[] timeData, float[] timeAxis) PerformIFFT(float[] inputSignal, double middleCutOffRatio = 0.2, double sideCutoffRatio = 0.02, float samplingRate = 100f)
+        {
+            int n = inputSignal.Length;
+            Complex[] complexSignal = new Complex[n];
+            for (int i = 0; i < n; i++) complexSignal[i] = new Complex(inputSignal[i], 0);
+
+            Fourier.Forward(complexSignal, FourierOptions.Matlab);
+
+            int middleCutOffIndex = (int)(n * middleCutOffRatio / 2);
+            int sideCutOffIndex = (int)(n * sideCutoffRatio / 2);
+
+            // 필터링 적용
+            for (int i = 0; i < n; i++)
+            {
+                if (!(sideCutOffIndex < i && i < middleCutOffIndex) &&
+                    !(n - middleCutOffIndex < i && i < n - sideCutOffIndex))
+                {
+                    complexSignal[i] = Complex.Zero;
+                }
+            }
+
+            Fourier.Inverse(complexSignal, FourierOptions.Matlab);
+
+            // 시간 축 계산
+            float[] timeAxis = new float[n];
+            float dt = 1f / samplingRate;
+            for (int i = 0; i < n; i++)
+            {
+                timeAxis[i] = i * dt;
+            }
+
+            // 실수부 데이터 추출
+            float[] outputSignal = new float[n];
+            for (int i = 0; i < n; i++)
+            {
+                outputSignal[i] = (float)complexSignal[i].Real;
+            }
+
+            return (outputSignal, timeAxis);
+        }
+
         public float[] FDomainFilter(float[] inputSignal, double middleCutOffRatio = 0.2, double sideCutoffRatio = 0.02)
         {
             int n = inputSignal.Length;
