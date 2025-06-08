@@ -66,17 +66,17 @@ namespace SAT_TestProgram
             {
                 // Initialize main plots
                 plotUpper.Plot.Title("Raw Signal");
-                plotUpper.Plot.XLabel("Time [ns]");
+                plotUpper.Plot.XLabel("Index");
                 plotUpper.Plot.YLabel("Voltage");
                 plotUpper.Refresh();
 
                 plotLower.Plot.Title("Void Signal");
-                plotLower.Plot.XLabel("Time [ns]");
+                plotLower.Plot.XLabel("Index");
                 plotLower.Plot.YLabel("Voltage");
                 plotLower.Refresh();
 
                 plotPreview.Plot.Title("Preview");
-                plotPreview.Plot.XLabel("Time [ns]");
+                plotPreview.Plot.XLabel("Index");
                 plotPreview.Plot.YLabel("Voltage");
                 plotPreview.Refresh();
 
@@ -488,12 +488,14 @@ namespace SAT_TestProgram
         {
             try
             {
-                if (_dataManager.CurrentData?.Volt != null && _dataManager.CurrentData.Second != null)
+                if (_dataManager.CurrentData?.Volt != null)
                 {
                     plotPreview.Plot.Clear();
 
-                    // 이미 나노초로 변환되어 있으므로 추가 변환 불필요
-                    double[] xData = _dataManager.CurrentData.Second;
+                    // 인덱스 기반 X축 데이터 생성
+                    double[] xData = Enumerable.Range(0, _dataManager.CurrentData.Volt.Length)
+                                             .Select(i => (double)i)
+                                             .ToArray();
 
                     // Plot the full data range
                     plotPreview.Plot.AddScatter(xData, _dataManager.CurrentData.Volt, System.Drawing.Color.Gray, 1, 3);
@@ -512,11 +514,14 @@ namespace SAT_TestProgram
 
                     // Set axis limits to show full data range
                     plotPreview.Plot.SetAxisLimits(
-                        xMin: xData[0],
-                        xMax: xData[xData.Length - 1],
+                        xMin: 0,
+                        xMax: xData.Length - 1,
                         yMin: _dataManager.CurrentData.Volt.Min(),
                         yMax: _dataManager.CurrentData.Volt.Max()
                     );
+
+                    // Update X-axis label to show it's index based
+                    plotPreview.Plot.XLabel("Index");
 
                     plotPreview.Refresh();
                 }
@@ -564,11 +569,11 @@ namespace SAT_TestProgram
 
         private void UpdateSliderRanges(DataModel data)
         {
-            if (data?.Volt != null && data.Volt.Length > 0 && data.Second != null)
+            if (data?.Volt != null && data.Volt.Length > 0)
             {
-                // X축 범위 설정 (이미 나노초 단위)
-                double xMin = data.Second[0];
-                double xMax = data.Second[data.Second.Length - 1];
+                // X축 범위를 인덱스 기반으로 설정
+                double xMin = 0;
+                double xMax = data.Volt.Length - 1;
                 
                 rangeSliderX.Minimum = xMin;
                 rangeSliderX.Maximum = xMax;
