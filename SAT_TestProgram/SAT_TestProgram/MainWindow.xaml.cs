@@ -297,11 +297,18 @@ namespace SAT_TestProgram
             {
                 var currentData = isRawData ? _rawSignalData : _voidSignalData;
 
+                // 인덱스 기반 X축 데이터 생성
+                float[] indexAxis = new float[processedData.Length];
+                for (int i = 0; i < processedData.Length; i++)
+                {
+                    indexAxis[i] = i;
+                }
+
                 // Create new AlgorithmDatas instance
                 var algorithmData = new AlgorithmDatas
                 {
                     Name = algorithmName,
-                    XData = customXAxis ?? currentData.XData.ToArray(),  // 주파수 축이 제공되면 사용, 아니면 기존 X축 사용
+                    XData = indexAxis,  // customXAxis 대신 indexAxis 사용
                     YData = processedData,
                     Gates = currentData.Gates?.ToList(),
                     FirstMaxIndex = currentData.FirstMaxIndex
@@ -314,8 +321,13 @@ namespace SAT_TestProgram
                 var plot = isRawData ? plotUpper.Plot : plotLower.Plot;
                 plot.Clear();
 
-                // Plot original data
-                double[] originalX = currentData.XData.Select(x => (double)x).ToArray();
+                // Plot original data with index X-axis
+                float[] originalIndexAxis = new float[currentData.YData.Length];
+                for (int i = 0; i < currentData.YData.Length; i++)
+                {
+                    originalIndexAxis[i] = i;
+                }
+                double[] originalX = originalIndexAxis.Select(x => (double)x).ToArray();
                 double[] originalY = currentData.YData.Select(y => (double)y).ToArray();
                 var originalScatter = plot.AddScatter(originalX, originalY, label: "Original");
 
@@ -327,6 +339,9 @@ namespace SAT_TestProgram
                     double[] algYData = algData.YData.Select(y => (double)y).ToArray();
                     plot.AddScatter(algXData, algYData, label: algData.Name);
                 }
+
+                // Update X-axis label to show it's index based
+                plot.XLabel("Index");
 
                 // Show legend
                 plot.Legend();
@@ -368,8 +383,15 @@ namespace SAT_TestProgram
                 string title = string.IsNullOrEmpty(data.FileName) ? "Signal" : data.FileName;
                 plot.Title(title);
 
+                // Create index-based X-axis data
+                float[] indexAxis = new float[data.YData.Length];
+                for (int i = 0; i < data.YData.Length; i++)
+                {
+                    indexAxis[i] = i;
+                }
+
                 // Convert float arrays to double arrays for plotting
-                double[] xData = data.XData.Select(x => (double)x).ToArray();
+                double[] xData = indexAxis.Select(x => (double)x).ToArray();
                 double[] yData = data.YData.Select(y => (double)y).ToArray();
 
                 // Plot the main signal data
@@ -394,6 +416,9 @@ namespace SAT_TestProgram
                     );
                 }
 
+                // Update X-axis label to show it's index based
+                plot.XLabel("Index");
+
                 // Show legend if there are algorithm results
                 if (algorithmDatas.Any())
                 {
@@ -407,10 +432,10 @@ namespace SAT_TestProgram
                     voidScatter = scatter;
 
                 // Update axis limits
-                if (data.XData.Length > 0 && data.YData.Length > 0)
+                if (data.YData.Length > 0)
                 {
-                    double xMin = data.XData.Min();
-                    double xMax = data.XData.Max();
+                    double xMin = 0;
+                    double xMax = data.YData.Length - 1;
                     double yMin = data.YData.Min();
                     double yMax = data.YData.Max();
 
@@ -625,24 +650,82 @@ namespace SAT_TestProgram
             }
         }
 
-        #region Algorithm Button Events
-        private void BtnFDomainFilter_Click(object sender, RoutedEventArgs e)
+        #region Parameter Validation
+        private (bool isValid, double middleCutOff, double sideCutOff, float samplingRate) ValidateAndGetParameters()
         {
+            try
+            {
+                // Middle Cut-off Ratio 검증
+                if (!double.TryParse(txtMiddleCutOffRatio.Text, out double middleCutOff) || 
+                    middleCutOff < 0 || middleCutOff > 1)
+                {
+                    System.Windows.MessageBox.Show(
+                        "Middle Cut-off Ratio는 0과 1 사이의 값이어야 합니다.",
+                        "파라미터 오류",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return (false, 0, 0, 0);
+                }
+
+                // Side Cut-off Ratio 검증
+                if (!double.TryParse(txtSideCutoffRatio.Text, out double sideCutOff) || 
+                    sideCutOff < 0 || sideCutOff > 1)
+                {
+                    System.Windows.MessageBox.Show(
+                        "Side Cut-off Ratio는 0과 1 사이의 값이어야 합니다.",
+                        "파라미터 오류",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return (false, 0, 0, 0);
+                }
+
+                // Sampling Rate 검증
+                if (!float.TryParse(txtSamplingRate.Text, out float samplingRate) || 
+                    samplingRate <= 0)
+                {
+                    System.Windows.MessageBox.Show(
+                        "Sampling Rate는 0보다 큰 값이어야 합니다.",
+                        "파라미터 오류",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return (false, 0, 0, 0);
+                }
+
+                return (true, middleCutOff, sideCutOff, samplingRate);
+            }
+            catch (Exception)
+            {
+                System.Windows.MessageBox.Show(
+                    "파라미터 값을 확인해주세요.",
+                    "파라미터 오류",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return (false, 0, 0, 0);
+            }
+        }
+        #endregion
+
+        #region FFT Algorithm Button Events
+        private void BtnPerformFFT_Click(object sender, RoutedEventArgs e)
+        {
+            var (isValid, _, _, samplingRate) = ValidateAndGetParameters();
+            if (!isValid) return;
+
             bool processedAny = false;
 
             // Raw Signal 처리
             if (chkRawSignal.IsChecked == true && _rawSignalData?.YData != null)
             {
-                float[] processedData = _signalProcessor.FDomainFilter(_rawSignalData.YData);
-                UpdateProcessedData("FDomain Filter", processedData, true);
+                var (magnitudeData, frequencyAxis) = _signalProcessor.PerformFFT(_rawSignalData.YData, samplingRate);
+                UpdateProcessedData("FFT", magnitudeData, true, frequencyAxis);
                 processedAny = true;
             }
 
             // Void Signal 처리
             if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
             {
-                float[] processedData = _signalProcessor.FDomainFilter(_voidSignalData.YData);
-                UpdateProcessedData("FDomain Filter", processedData, false);
+                var (magnitudeData, frequencyAxis) = _signalProcessor.PerformFFT(_voidSignalData.YData, samplingRate);
+                UpdateProcessedData("FFT", magnitudeData, false, frequencyAxis);
                 processedAny = true;
             }
 
@@ -653,6 +736,102 @@ namespace SAT_TestProgram
             }
         }
 
+        private void BtnApplyFrequencyFilter_Click(object sender, RoutedEventArgs e)
+        {
+            var (isValid, middleCutOff, sideCutOff, samplingRate) = ValidateAndGetParameters();
+            if (!isValid) return;
+
+            bool processedAny = false;
+
+            // Raw Signal 처리
+            if (chkRawSignal.IsChecked == true && _rawSignalData?.YData != null)
+            {
+                var (magnitudeData, frequencyAxis) = _signalProcessor.ApplyFrequencyFilter(
+                    _rawSignalData.YData, middleCutOff, sideCutOff, samplingRate);
+                UpdateProcessedData("Frequency Filter", magnitudeData, true, frequencyAxis);
+                processedAny = true;
+            }
+
+            // Void Signal 처리
+            if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
+            {
+                var (magnitudeData, frequencyAxis) = _signalProcessor.ApplyFrequencyFilter(
+                    _voidSignalData.YData, middleCutOff, sideCutOff, samplingRate);
+                UpdateProcessedData("Frequency Filter", magnitudeData, false, frequencyAxis);
+                processedAny = true;
+            }
+
+            // 둘 다 처리되지 않은 경우
+            if (!processedAny)
+            {
+                System.Windows.MessageBox.Show("처리할 데이터가 없습니다. 데이터를 로드하고 체크박스를 선택해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        private void BtnPerformIFFT_Click(object sender, RoutedEventArgs e)
+        {
+            var (isValid, middleCutOff, sideCutOff, samplingRate) = ValidateAndGetParameters();
+            if (!isValid) return;
+
+            bool processedAny = false;
+
+            // Raw Signal 처리
+            if (chkRawSignal.IsChecked == true && _rawSignalData?.YData != null)
+            {
+                var (timeData, timeAxis) = _signalProcessor.PerformIFFT(
+                    _rawSignalData.YData, middleCutOff, sideCutOff, samplingRate);
+                UpdateProcessedData("IFFT", timeData, true, timeAxis);
+                processedAny = true;
+            }
+
+            // Void Signal 처리
+            if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
+            {
+                var (timeData, timeAxis) = _signalProcessor.PerformIFFT(
+                    _voidSignalData.YData, middleCutOff, sideCutOff, samplingRate);
+                UpdateProcessedData("IFFT", timeData, false, timeAxis);
+                processedAny = true;
+            }
+
+            // 둘 다 처리되지 않은 경우
+            if (!processedAny)
+            {
+                System.Windows.MessageBox.Show("처리할 데이터가 없습니다. 데이터를 로드하고 체크박스를 선택해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        private void BtnFDomainFilter_Click(object sender, RoutedEventArgs e)
+        {
+            var (isValid, middleCutOff, sideCutOff, _) = ValidateAndGetParameters();
+            if (!isValid) return;
+
+            bool processedAny = false;
+
+            // Raw Signal 처리
+            if (chkRawSignal.IsChecked == true && _rawSignalData?.YData != null)
+            {
+                float[] processedData = _signalProcessor.FDomainFilter(_rawSignalData.YData, middleCutOff, sideCutOff);
+                UpdateProcessedData("FDomain Filter", processedData, true);
+                processedAny = true;
+            }
+
+            // Void Signal 처리
+            if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
+            {
+                float[] processedData = _signalProcessor.FDomainFilter(_voidSignalData.YData, middleCutOff, sideCutOff);
+                UpdateProcessedData("FDomain Filter", processedData, false);
+                processedAny = true;
+            }
+
+            // 둘 다 처리되지 않은 경우
+            if (!processedAny)
+            {
+                System.Windows.MessageBox.Show("처리할 데이터가 없습니다. 데이터를 로드하고 체크박스를 선택해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+        #endregion
+
+        #region Other Algorithm Button Events
         private void BtnExtractEnvelope_Click(object sender, RoutedEventArgs e)
         {
             bool processedAny = false;
@@ -682,12 +861,15 @@ namespace SAT_TestProgram
 
         private void BtnFilterWithEnvelope_Click(object sender, RoutedEventArgs e)
         {
+            var (isValid, middleCutOff, sideCutOff, _) = ValidateAndGetParameters();
+            if (!isValid) return;
+
             bool processedAny = false;
 
             // Raw Signal 처리
             if (chkRawSignal.IsChecked == true && _rawSignalData?.YData != null)
             {
-                float[] processedData = _signalProcessor.FDomainFilterWithEnvelope(_rawSignalData.YData);
+                float[] processedData = _signalProcessor.FDomainFilterWithEnvelope(_rawSignalData.YData, middleCutOff, sideCutOff);
                 UpdateProcessedData("Filter+Envelope", processedData, true);
                 processedAny = true;
             }
@@ -695,7 +877,7 @@ namespace SAT_TestProgram
             // Void Signal 처리
             if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
             {
-                float[] processedData = _signalProcessor.FDomainFilterWithEnvelope(_voidSignalData.YData);
+                float[] processedData = _signalProcessor.FDomainFilterWithEnvelope(_voidSignalData.YData, middleCutOff, sideCutOff);
                 UpdateProcessedData("Filter+Envelope", processedData, false);
                 processedAny = true;
             }
@@ -796,87 +978,6 @@ namespace SAT_TestProgram
                     UpdateProcessedData("C-Scan Norm", processedData, false);
                     processedAny = true;
                 }
-            }
-
-            // 둘 다 처리되지 않은 경우
-            if (!processedAny)
-            {
-                System.Windows.MessageBox.Show("처리할 데이터가 없습니다. 데이터를 로드하고 체크박스를 선택해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-        }
-
-        private void BtnPerformFFT_Click(object sender, RoutedEventArgs e)
-        {
-            bool processedAny = false;
-
-            // Raw Signal 처리
-            if (chkRawSignal.IsChecked == true && _rawSignalData?.YData != null)
-            {
-                var (magnitudeData, frequencyAxis) = _signalProcessor.PerformFFT(_rawSignalData.YData);
-                UpdateProcessedData("FFT", magnitudeData, true, frequencyAxis);
-                processedAny = true;
-            }
-
-            // Void Signal 처리
-            if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
-            {
-                var (magnitudeData, frequencyAxis) = _signalProcessor.PerformFFT(_voidSignalData.YData);
-                UpdateProcessedData("FFT", magnitudeData, false, frequencyAxis);
-                processedAny = true;
-            }
-
-            // 둘 다 처리되지 않은 경우
-            if (!processedAny)
-            {
-                System.Windows.MessageBox.Show("처리할 데이터가 없습니다. 데이터를 로드하고 체크박스를 선택해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-        }
-
-        private void BtnApplyFrequencyFilter_Click(object sender, RoutedEventArgs e)
-        {
-            bool processedAny = false;
-
-            // Raw Signal 처리
-            if (chkRawSignal.IsChecked == true && _rawSignalData?.YData != null)
-            {
-                var (magnitudeData, frequencyAxis) = _signalProcessor.ApplyFrequencyFilter(_rawSignalData.YData);
-                UpdateProcessedData("Frequency Filter", magnitudeData, true, frequencyAxis);
-                processedAny = true;
-            }
-
-            // Void Signal 처리
-            if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
-            {
-                var (magnitudeData, frequencyAxis) = _signalProcessor.ApplyFrequencyFilter(_voidSignalData.YData);
-                UpdateProcessedData("Frequency Filter", magnitudeData, false, frequencyAxis);
-                processedAny = true;
-            }
-
-            // 둘 다 처리되지 않은 경우
-            if (!processedAny)
-            {
-                System.Windows.MessageBox.Show("처리할 데이터가 없습니다. 데이터를 로드하고 체크박스를 선택해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-        }
-
-        private void BtnPerformIFFT_Click(object sender, RoutedEventArgs e)
-        {
-            bool processedAny = false;
-
-            // Raw Signal 처리
-            if (chkRawSignal.IsChecked == true && _rawSignalData?.YData != null)
-            {
-                var (timeData, timeAxis) = _signalProcessor.PerformIFFT(_rawSignalData.YData);
-                UpdateProcessedData("IFFT", timeData, true, timeAxis);
-                processedAny = true;
-            }
-
-            // Void Signal 처리
-            if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
-            {
-                var (timeData, timeAxis) = _signalProcessor.PerformIFFT(_voidSignalData.YData);
-                UpdateProcessedData("IFFT", timeData, false, timeAxis);
-                processedAny = true;
             }
 
             // 둘 다 처리되지 않은 경우

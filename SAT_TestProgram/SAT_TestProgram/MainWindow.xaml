@@ -9,7 +9,7 @@
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
-        Title="SAT Test Program" Height="900" Width="1800">
+        Title="SAT Test Program" Height="920" Width="1800">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="1*"/>
@@ -33,7 +33,7 @@
             <Grid Background="#FFF5F5F5">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
@@ -91,12 +91,34 @@
 
                         <Grid Grid.Row="0">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="2*"/>
                                 <ColumnDefinition Width="3*"/>
+                                <ColumnDefinition Width="2.5*"/>
                             </Grid.ColumnDefinitions>
 
                             <!-- Algorithm Buttons -->
                             <StackPanel Grid.Column="0" Margin="5">
+                                <!-- Parameter Controls -->
+                                <GroupBox Header="Filter Parameters" Margin="0,0,0,10">
+                                    <StackPanel>
+                                        <DockPanel Margin="0,5">
+                                            <TextBlock Text="Middle Cut-off Ratio:" Width="120" VerticalAlignment="Center"/>
+                                            <TextBox x:Name="txtMiddleCutOffRatio" Text="0.2" Width="60" 
+                                                     ToolTip="Range: 0.0 - 1.0"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,5">
+                                            <TextBlock Text="Side Cut-off Ratio:" Width="120" VerticalAlignment="Center"/>
+                                            <TextBox x:Name="txtSideCutoffRatio" Text="0.02" Width="60"
+                                                     ToolTip="Range: 0.0 - 1.0"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,5">
+                                            <TextBlock Text="Sampling Rate (Hz):" Width="120" VerticalAlignment="Center"/>
+                                            <TextBox x:Name="txtSamplingRate" Text="100" Width="60"
+                                                     ToolTip="Sampling rate in Hz"/>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </GroupBox>
+
+                                <!-- Algorithm Buttons -->
                                 <Button Content="Perform FFT" 
                                         Margin="0,5" 
                                         Padding="5"
@@ -121,14 +143,14 @@
                                         Margin="0,5" 
                                         Padding="5"
                                         Click="BtnFilterWithEnvelope_Click"/>
-                                <Button Content="B-Scan Norm" 
+                                <!--<Button Content="B-Scan Norm" 
                                         Margin="0,5" 
                                         Padding="5"
                                         Click="BtnBScanNorm_Click"/>
                                 <Button Content="C-Scan Norm" 
                                         Margin="0,5" 
                                         Padding="5"
-                                        Click="BtnCScanNorm_Click"/>
+                                        Click="BtnCScanNorm_Click"/>-->
                             </StackPanel>
 
                             <!-- Applied Algorithms List -->
@@ -230,13 +252,13 @@
                         <GroupBox Header="Preview" Margin="0,5">
                             <Grid>
                                 <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
                                 <!-- Preview Legend -->
                                 <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5">
-                                    <Rectangle Width="16" Height="16" Fill="#80FF0000" Margin="0,0,5,0"/>
+                                    <Rectangle Width="16" Height="12" Fill="#80FF0000" Margin="0,0,5,0"/>
                                     <TextBlock Text="Selected Range" VerticalAlignment="Center"/>
                                 </StackPanel>
 
