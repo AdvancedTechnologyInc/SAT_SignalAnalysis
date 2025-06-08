@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Numerics;
 using SAT_TestProgram.Models;
 
 namespace SAT_TestProgram.Data
@@ -21,6 +22,9 @@ namespace SAT_TestProgram.Data
         // Y축 데이터 (전압)
         public float[] YData { get; set; }
 
+        // Complex 데이터 (FFT 등의 복소수 데이터)
+        public Complex[] ComplexData { get; set; }
+
         // 게이트 목록
         public List<SignalProcessor.Gate> Gates { get; set; }
 
@@ -35,6 +39,7 @@ namespace SAT_TestProgram.Data
             Name = string.Empty;
             XData = Array.Empty<float>();
             YData = Array.Empty<float>();
+            ComplexData = Array.Empty<Complex>();
             Gates = new List<SignalProcessor.Gate>();
             FirstMaxIndex = -1;
         }
@@ -49,6 +54,7 @@ namespace SAT_TestProgram.Data
             Name = name;
             XData = new float[dataLength];
             YData = new float[dataLength];
+            ComplexData = new Complex[dataLength];
             Gates = new List<SignalProcessor.Gate>();
             FirstMaxIndex = -1;
         }
@@ -64,6 +70,7 @@ namespace SAT_TestProgram.Data
                 Name = other.Name;
                 XData = other.XData?.ToArray() ?? Array.Empty<float>();
                 YData = other.YData?.ToArray() ?? Array.Empty<float>();
+                ComplexData = other.ComplexData?.ToArray() ?? Array.Empty<Complex>();
                 Gates = other.Gates?.ToList() ?? new List<SignalProcessor.Gate>();
                 FirstMaxIndex = other.FirstMaxIndex;
             }
@@ -72,6 +79,7 @@ namespace SAT_TestProgram.Data
                 Name = string.Empty;
                 XData = Array.Empty<float>();
                 YData = Array.Empty<float>();
+                ComplexData = Array.Empty<Complex>();
                 Gates = new List<SignalProcessor.Gate>();
                 FirstMaxIndex = -1;
             }
@@ -85,8 +93,9 @@ namespace SAT_TestProgram.Data
         {
             return !string.IsNullOrEmpty(Name) &&
                    XData != null && XData.Length > 0 &&
-                   YData != null && YData.Length > 0 &&
-                   XData.Length == YData.Length;
+                   ((YData != null && YData.Length > 0) ||
+                    (ComplexData != null && ComplexData.Length > 0)) &&
+                   XData.Length == (YData?.Length ?? ComplexData?.Length ?? 0);
         }
 
         /// <summary>
@@ -97,6 +106,7 @@ namespace SAT_TestProgram.Data
             Name = string.Empty;
             XData = Array.Empty<float>();
             YData = Array.Empty<float>();
+            ComplexData = Array.Empty<Complex>();
             Gates.Clear();
             FirstMaxIndex = -1;
         }

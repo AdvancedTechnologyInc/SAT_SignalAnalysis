@@ -730,8 +730,16 @@ namespace SAT_TestProgram
                 float[] inputData = chkContinuousProcessingUpper.IsChecked == true ? 
                     GetLatestProcessedData(true) : _rawSignalData.YData;
 
-                var (magnitudeData, frequencyAxis) = _signalProcessor.PerformFFT(inputData, samplingRate);
+                var (magnitudeData, frequencyAxis, complexData) = _signalProcessor.PerformFFT(inputData, samplingRate);
                 UpdateProcessedData("FFT", magnitudeData, true, frequencyAxis);
+                
+                // Store Complex data in the latest algorithm data
+                var latestData = _dataManager.GetAllAlgorithmDatas(true).LastOrDefault();
+                if (latestData != null)
+                {
+                    latestData.ComplexData = complexData;
+                }
+                
                 processedAny = true;
             }
 
@@ -739,10 +747,18 @@ namespace SAT_TestProgram
             if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
             {
                 float[] inputData = chkContinuousProcessingLower.IsChecked == true ? 
-                    GetLatestProcessedData(true) : _voidSignalData.YData;
+                    GetLatestProcessedData(false) : _voidSignalData.YData;
 
-                var (magnitudeData, frequencyAxis) = _signalProcessor.PerformFFT(inputData, samplingRate);
+                var (magnitudeData, frequencyAxis, complexData) = _signalProcessor.PerformFFT(inputData, samplingRate);
                 UpdateProcessedData("FFT", magnitudeData, false, frequencyAxis);
+                
+                // Store Complex data in the latest algorithm data
+                var latestData = _dataManager.GetAllAlgorithmDatas(false).LastOrDefault();
+                if (latestData != null)
+                {
+                    latestData.ComplexData = complexData;
+                }
+                
                 processedAny = true;
             }
 
@@ -802,8 +818,16 @@ namespace SAT_TestProgram
                 float[] inputData = chkContinuousProcessingUpper.IsChecked == true ? 
                     GetLatestProcessedData(true) : _rawSignalData.YData;
 
-                var (magnitudeData, frequencyAxis) = _signalProcessor.ApplyFrequencyFilter(inputData, middleCutOff, sideCutOff, samplingRate);
+                var (magnitudeData, frequencyAxis, complexData) = _signalProcessor.ApplyFrequencyFilter(inputData, middleCutOff, sideCutOff, samplingRate);
                 UpdateProcessedData("Frequency Filter", magnitudeData, true, frequencyAxis);
+                
+                // Store Complex data in the latest algorithm data
+                var latestData = _dataManager.GetAllAlgorithmDatas(true).LastOrDefault();
+                if (latestData != null)
+                {
+                    latestData.ComplexData = complexData;
+                }
+                
                 processedAny = true;
             }
 
@@ -811,10 +835,18 @@ namespace SAT_TestProgram
             if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
             {
                 float[] inputData = chkContinuousProcessingLower.IsChecked == true ? 
-                    GetLatestProcessedData(true) : _voidSignalData.YData;
+                    GetLatestProcessedData(false) : _voidSignalData.YData;
 
-                var (magnitudeData, frequencyAxis) = _signalProcessor.ApplyFrequencyFilter(inputData, middleCutOff, sideCutOff, samplingRate);
+                var (magnitudeData, frequencyAxis, complexData) = _signalProcessor.ApplyFrequencyFilter(inputData, middleCutOff, sideCutOff, samplingRate);
                 UpdateProcessedData("Frequency Filter", magnitudeData, false, frequencyAxis);
+                
+                // Store Complex data in the latest algorithm data
+                var latestData = _dataManager.GetAllAlgorithmDatas(false).LastOrDefault();
+                if (latestData != null)
+                {
+                    latestData.ComplexData = complexData;
+                }
+                
                 processedAny = true;
             }
 
@@ -838,8 +870,16 @@ namespace SAT_TestProgram
                 float[] inputData = chkContinuousProcessingUpper.IsChecked == true ? 
                     GetLatestProcessedData(true) : _rawSignalData.YData;
 
-                var (timeData, timeAxis) = _signalProcessor.PerformIFFT(inputData, samplingRate);
+                var (timeData, timeAxis, complexData) = _signalProcessor.PerformIFFT(inputData, samplingRate);
                 UpdateProcessedData("IFFT", timeData, true, timeAxis);
+                
+                // Store Complex data in the latest algorithm data
+                var latestData = _dataManager.GetAllAlgorithmDatas(true).LastOrDefault();
+                if (latestData != null)
+                {
+                    latestData.ComplexData = complexData;
+                }
+                
                 processedAny = true;
             }
 
@@ -847,10 +887,18 @@ namespace SAT_TestProgram
             if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
             {
                 float[] inputData = chkContinuousProcessingLower.IsChecked == true ? 
-                    GetLatestProcessedData(true) : _voidSignalData.YData;
+                    GetLatestProcessedData(false) : _voidSignalData.YData;
 
-                var (timeData, timeAxis) = _signalProcessor.PerformIFFT(inputData, samplingRate);
+                var (timeData, timeAxis, complexData) = _signalProcessor.PerformIFFT(inputData, samplingRate);
                 UpdateProcessedData("IFFT", timeData, false, timeAxis);
+                
+                // Store Complex data in the latest algorithm data
+                var latestData = _dataManager.GetAllAlgorithmDatas(false).LastOrDefault();
+                if (latestData != null)
+                {
+                    latestData.ComplexData = complexData;
+                }
+                
                 processedAny = true;
             }
 

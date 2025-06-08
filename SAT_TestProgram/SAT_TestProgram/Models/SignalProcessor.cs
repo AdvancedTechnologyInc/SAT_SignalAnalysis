@@ -129,7 +129,7 @@ namespace SAT_TestProgram.Models
         #endregion
 
         #region Filter Methods
-        public (float[] magnitudeData, float[] frequencyAxis) PerformFFT(float[] inputSignal, float samplingRate = 100f)
+        public (float[] magnitudeData, float[] frequencyAxis, Complex[] complexData) PerformFFT(float[] inputSignal, float samplingRate = 100f)
         {
             int n = inputSignal.Length;
             Complex[] complexSignal = new Complex[n];
@@ -156,10 +156,10 @@ namespace SAT_TestProgram.Models
                 magnitudeSpectrum[i] = (float)complexSignal[i].Magnitude;
             }
 
-            return (magnitudeSpectrum, frequencyAxis);
+            return (magnitudeSpectrum, frequencyAxis, complexSignal);
         }
 
-        public (float[] magnitudeData, float[] frequencyAxis) ApplyFrequencyFilter(float[] inputSignal, double middleCutOffRatio = 0.2, double sideCutoffRatio = 0.02, float samplingRate = 100f)
+        public (float[] magnitudeData, float[] frequencyAxis, Complex[] complexData) ApplyFrequencyFilter(float[] inputSignal, double middleCutOffRatio = 0.2, double sideCutoffRatio = 0.02, float samplingRate = 100f)
         {
             // FFT 수행하지 않고 입력 신호를 직접 필터링
             int n = inputSignal.Length;
@@ -198,10 +198,10 @@ namespace SAT_TestProgram.Models
                 magnitudeSpectrum[i] = (float)complexSignal[i].Magnitude;
             }
 
-            return (magnitudeSpectrum, frequencyAxis);
+            return (magnitudeSpectrum, frequencyAxis, complexSignal);
         }
 
-        public (float[] timeData, float[] timeAxis) PerformIFFT(float[] inputSignal, float samplingRate = 100f)
+        public (float[] timeData, float[] timeAxis, Complex[] complexData) PerformIFFT(float[] inputSignal, float samplingRate = 100f)
         {
             // 이미 주파수 도메인에 있는 신호를 시간 도메인으로 변환
             int n = inputSignal.Length;
@@ -225,7 +225,7 @@ namespace SAT_TestProgram.Models
                 outputSignal[i] = (float)complexSignal[i].Real;
             }
 
-            return (outputSignal, timeAxis);
+            return (outputSignal, timeAxis, complexSignal);
         }
 
         public float[] FDomainFilter(float[] inputSignal, double middleCutOffRatio = 0.2, double sideCutoffRatio = 0.02)
