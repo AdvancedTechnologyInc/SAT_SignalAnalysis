@@ -663,66 +663,119 @@ namespace SAT_TestProgram
         }
 
         #region Parameter Validation
+
         private (bool isValid, float middleCutOff, float sideCutOff, float samplingRate) ValidateAndGetParameters()
         {
-            float middleCutOff = 0f;
-            float sideCutOff = 0f;
-            float samplingRate = 100f;
-
             try
             {
-                // Validate and parse middle cut-off frequency
-                if (!float.TryParse(txtMiddleCutOffRatio.Text, out middleCutOff))
+                // Middle Cut-off Ratio 검증
+                if (!float.TryParse(txtMiddleCutOffRatio.Text, out float middleCutOff) ||
+                    middleCutOff < 0 || middleCutOff > 1)
                 {
-                    System.Windows.MessageBox.Show("중간 차단 주파수가 올바른 숫자 형식이 아닙니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return (false, 0f, 0f, 100f);
+                    System.Windows.MessageBox.Show(
+                        "Middle Cut-off Ratio는 0과 1 사이의 값이어야 합니다.",
+                        "파라미터 오류",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return (false, 0, 0, 0);
                 }
 
-                // Validate and parse side cut-off frequency
-                if (!float.TryParse(txtSideCutoffRatio.Text, out sideCutOff))
+                // Side Cut-off Ratio 검증
+                if (!float.TryParse(txtSideCutoffRatio.Text, out float sideCutOff) ||
+                    sideCutOff < 0 || sideCutOff > 1)
                 {
-                    System.Windows.MessageBox.Show("측면 차단 주파수가 올바른 숫자 형식이 아닙니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return (false, 0f, 0f, 100f);
+                    System.Windows.MessageBox.Show(
+                        "Side Cut-off Ratio는 0과 1 사이의 값이어야 합니다.",
+                        "파라미터 오류",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return (false, 0, 0, 0);
                 }
 
-                // Validate and parse sampling rate
-                if (!float.TryParse(txtSamplingRate.Text, out samplingRate))
+                // Sampling Rate 검증
+                if (!float.TryParse(txtSamplingRate.Text, out float samplingRate) ||
+                    samplingRate <= 0)
                 {
-                    System.Windows.MessageBox.Show("샘플링 레이트가 올바른 숫자 형식이 아닙니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return (false, 0f, 0f, 100f);
+                    System.Windows.MessageBox.Show(
+                        "Sampling Rate는 0보다 큰 값이어야 합니다.",
+                        "파라미터 오류",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return (false, 0, 0, 0);
                 }
-
-                // Additional validation
-                if (middleCutOff <= 0f)
-                {
-                    System.Windows.MessageBox.Show("중간 차단 주파수는 0보다 커야 합니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return (false, 0f, 0f, 100f);
-                }
-
-                if (sideCutOff <= 0f)
-                {
-                    System.Windows.MessageBox.Show("측면 차단 주파수는 0보다 커야 합니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return (false, 0f, 0f, 100f);
-                }
-
-                if (samplingRate <= 0f)
-                {
-                    System.Windows.MessageBox.Show("샘플링 레이트는 0보다 커야 합니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return (false, 0f, 0f, 100f);
-                }
-
-                // Convert ratio to frequency
-                middleCutOff = middleCutOff * samplingRate / 2f;
-                sideCutOff = sideCutOff * samplingRate / 2f;
 
                 return (true, middleCutOff, sideCutOff, samplingRate);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                System.Windows.MessageBox.Show($"매개변수 검증 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
-                return (false, 0f, 0f, 100f);
+                System.Windows.MessageBox.Show(
+                    "파라미터 값을 확인해주세요.",
+                    "파라미터 오류",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return (false, 0, 0, 0);
             }
         }
+        //private (bool isValid, float middleCutOff, float sideCutOff, float samplingRate) ValidateAndGetParameters()
+        //{
+        //    float middleCutOff = 0f;
+        //    float sideCutOff = 0f;
+        //    float samplingRate = 100f;
+
+        //    try
+        //    {
+        //        // Validate and parse middle cut-off frequency
+        //        if (!float.TryParse(txtMiddleCutOffRatio.Text, out middleCutOff))
+        //        {
+        //            System.Windows.MessageBox.Show("중간 차단 주파수가 올바른 숫자 형식이 아닙니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+        //            return (false, 0f, 0f, 100f);
+        //        }
+
+        //        // Validate and parse side cut-off frequency
+        //        if (!float.TryParse(txtSideCutoffRatio.Text, out sideCutOff))
+        //        {
+        //            System.Windows.MessageBox.Show("측면 차단 주파수가 올바른 숫자 형식이 아닙니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+        //            return (false, 0f, 0f, 100f);
+        //        }
+
+        //        // Validate and parse sampling rate
+        //        if (!float.TryParse(txtSamplingRate.Text, out samplingRate))
+        //        {
+        //            System.Windows.MessageBox.Show("샘플링 레이트가 올바른 숫자 형식이 아닙니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+        //            return (false, 0f, 0f, 100f);
+        //        }
+
+        //        // Additional validation
+        //        if (middleCutOff <= 0f)
+        //        {
+        //            System.Windows.MessageBox.Show("중간 차단 주파수는 0보다 커야 합니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+        //            return (false, 0f, 0f, 100f);
+        //        }
+
+        //        if (sideCutOff <= 0f)
+        //        {
+        //            System.Windows.MessageBox.Show("측면 차단 주파수는 0보다 커야 합니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+        //            return (false, 0f, 0f, 100f);
+        //        }
+
+        //        if (samplingRate <= 0f)
+        //        {
+        //            System.Windows.MessageBox.Show("샘플링 레이트는 0보다 커야 합니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+        //            return (false, 0f, 0f, 100f);
+        //        }
+
+        //        // Convert ratio to frequency
+        //        middleCutOff = middleCutOff * samplingRate / 2f;
+        //        sideCutOff = sideCutOff * samplingRate / 2f;
+
+        //        return (true, middleCutOff, sideCutOff, samplingRate);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        System.Windows.MessageBox.Show($"매개변수 검증 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+        //        return (false, 0f, 0f, 100f);
+        //    }
+        //}
         #endregion
 
         #region FFT Algorithm Button Events
