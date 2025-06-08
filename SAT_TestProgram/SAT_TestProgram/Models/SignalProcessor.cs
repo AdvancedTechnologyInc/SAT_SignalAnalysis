@@ -167,24 +167,35 @@ namespace SAT_TestProgram.Models
             float[] frequencyAxis = Enumerable.Range(0, n).Select(i => i * df).ToArray();
 
             // Apply frequency filter to complex spectrum
-            Complex[] filteredSpectrum = new Complex[n];
+            //Complex[] filteredSpectrum = new Complex[n];
+            //for (int i = 0; i < n; i++)
+            //{
+            //    float frequency = frequencyAxis[i];
+            //    if (frequency >= middleCutOff - sideCutOff && frequency <= middleCutOff + sideCutOff)
+            //    {
+            //        filteredSpectrum[i] = inputSignal[i];
+            //    }
+            //    else
+            //    {
+            //        filteredSpectrum[i] = Complex.Zero;
+            //    }
+            //}
+            int middleCutOffIndex = (int)(n * middleCutOff / 2);
+            int sideCutOffIndex = (int)(n * sideCutOff / 2);
+
             for (int i = 0; i < n; i++)
             {
-                float frequency = frequencyAxis[i];
-                if (frequency >= middleCutOff - sideCutOff && frequency <= middleCutOff + sideCutOff)
+                if (!(sideCutOffIndex < i && i < middleCutOffIndex) &&
+                    !(n - middleCutOffIndex < i && i < n - sideCutOffIndex))
                 {
-                    filteredSpectrum[i] = inputSignal[i];
+                    inputSignal[i] = Complex.Zero;
                 }
-                else
-                {
-                    filteredSpectrum[i] = Complex.Zero;
-                }
+
             }
-
             // Calculate magnitude spectrum
-            float[] magnitudeSpectrum = filteredSpectrum.Select(c => (float)c.Magnitude).ToArray();
+            float[] magnitudeSpectrum = inputSignal.Select(c => (float)c.Magnitude).ToArray();
 
-            return (magnitudeSpectrum, frequencyAxis, filteredSpectrum);
+            return (magnitudeSpectrum, frequencyAxis, inputSignal);
         }
 
         public (float[] magnitudeSpectrum, float[] frequencyAxis, Complex[] complexSpectrum) ApplyFrequencyFilter(float[] inputSignal, float middleCutOff, float sideCutOff, float samplingRate)
