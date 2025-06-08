@@ -143,6 +143,21 @@
                                         Margin="0,5" 
                                         Padding="5"
                                         Click="BtnFilterWithEnvelope_Click"/>
+                                <Button x:Name="BtnGaussianFilter" Content="Gaussian Filter" Margin="0,5" 
+                                        Padding="5" Click="BtnGaussianFilter_Click"/>
+                                <Button x:Name="BtnUnsharpMasking" Content="Unsharp Masking" Margin="0,5" 
+                                        Padding="5" Click="BtnUnsharpMasking_Click"/>
+                                <Button x:Name="BtnZeroOffset" Content="Zero Offset" Margin="0,5" 
+                                        Padding="5" Click="BtnZeroOffset_Click"/>
+                                <CheckBox x:Name="chkAbsoluteValue" Content="절대값 적용" Margin="5,0" VerticalAlignment="Center"/>
+                                <Button x:Name="BtnThresholdFilter" Content="Threshold Filter" Margin="0,5" 
+                                        Padding="5" Click="BtnThresholdFilter_Click"/>
+                                <TextBox x:Name="txtThresholdValue" Width="60" Height="23" Margin="5,0" VerticalAlignment="Center" Text="0.5"/>
+                                <CheckBox x:Name="chkThresholdAbsolute" Content="절대값 기준" Margin="5,0" VerticalAlignment="Center"/>
+
+                                <Button x:Name="BtnHilbertTransform" Content="Hilbert Transform" Margin="0,5" 
+                                        Padding="5" Click="BtnHilbertTransform_Click"/>
+                                <CheckBox x:Name="chkHilbertEnvelope" Content="포락선 출력" Margin="5,0" VerticalAlignment="Center" IsChecked="True"/>
                                 <!--<Button Content="B-Scan Norm" 
                                         Margin="0,5" 
                                         Padding="5"
@@ -163,120 +178,7 @@
                         </Grid>
                     </Grid>
                 </GroupBox>
-                <!-- Scale Controls -->
-                <GroupBox Header="Scale Controls" 
-                         Grid.Row="2" 
-                         Margin="5">
-                    <StackPanel>
-                        <!-- X Scale Control -->
-                        <GroupBox Header="X Scale" Margin="0,5">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-
-                                <!-- Range Labels -->
-                                <TextBlock Text="{Binding ElementName=rangeSliderX, Path=LowerValue, StringFormat={}{0:F0} ns}"
-                                         Grid.Row="0" Grid.Column="0"
-                                         Width="80"
-                                         TextAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="5,0"/>
-
-                                <TextBlock Text="{Binding ElementName=rangeSliderX, Path=HigherValue, StringFormat={}{0:F0} ns}"
-                                         Grid.Row="0" Grid.Column="2"
-                                         Width="80"
-                                         TextAlignment="Right"
-                                         VerticalAlignment="Center"
-                                         Margin="5,0"/>
-
-                                <!-- Range Slider -->
-                                <xctk:RangeSlider x:Name="rangeSliderX"
-                                        Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
-                                        Minimum="0" 
-                                        Maximum="100"
-                                        LowerValue="0"
-                                        HigherValue="100"
-                                        Margin="5"
-                                        PreviewMouseMove="RangeSlider_PreviewMouseMove"/>
-                            </Grid>
-                        </GroupBox>
-
-                        <!-- Y Scale Control -->
-                        <GroupBox Header="Y Scale" Margin="0,5">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-
-                                <!-- Range Labels -->
-                                <TextBlock Text="{Binding ElementName=rangeSliderY, Path=LowerValue, StringFormat=N2}"
-                                         Grid.Row="0" Grid.Column="0"
-                                         Width="40"
-                                         TextAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="5,0"/>
-
-                                <TextBlock Text="{Binding ElementName=rangeSliderY, Path=HigherValue, StringFormat=N2}"
-                                         Grid.Row="0" Grid.Column="2"
-                                         Width="40"
-                                         TextAlignment="Right"
-                                         VerticalAlignment="Center"
-                                         Margin="5,0"/>
-
-                                <!-- Range Slider -->
-                                <xctk:RangeSlider x:Name="rangeSliderY"
-                                        Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
-                                        Minimum="-10" 
-                                        Maximum="10"
-                                        LowerValue="-5"
-                                        HigherValue="5"
-                                        Margin="5"
-                                        PreviewMouseMove="RangeSlider_PreviewMouseMove"/>
-                            </Grid>
-                        </GroupBox>
-
-                        <!-- Preview Area -->
-                        <GroupBox Header="Preview" Margin="0,5">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="*"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-
-                                <!-- Preview Legend -->
-                                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5">
-                                    <Rectangle Width="16" Height="12" Fill="#80FF0000" Margin="0,0,5,0"/>
-                                    <TextBlock Text="Selected Range" VerticalAlignment="Center"/>
-                                </StackPanel>
-
-                                <!-- Preview Plot -->
-                                <Border Grid.Row="1" Height="100" Margin="5">
-                                    <ScottPlot:WpfPlot x:Name="plotPreview" 
-                                                      x:FieldModifier="public"/>
-                                </Border>
-                            </Grid>
-                        </GroupBox>
-
-                        <!-- Control Buttons -->
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5">
-                            <Button Content="Apply" Width="80" Margin="5,0" Click="ApplyScale_Click"/>
-                            <Button Content="Reset Scale" Width="80" Margin="5,0" Click="ResetScale_Click"/>
-                        </StackPanel>
-                    </StackPanel>
-                </GroupBox>
+               
 
             </Grid>
         </GroupBox>
@@ -391,23 +293,121 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <!-- Signal Processing Controls -->
-                <GroupBox Header="Signal Processing" Grid.Row="0" Margin="5">
+               
+                <!-- Scale Controls -->
+                <GroupBox Header="Scale Controls" 
+                         Grid.Row="2" 
+                         Margin="5">
                     <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="5">
-                            <Button x:Name="BtnGaussianFilter" Content="Gaussian Filter" Width="100" Height="30" Margin="5" Click="BtnGaussianFilter_Click"/>
-                            <Button x:Name="BtnUnsharpMasking" Content="Unsharp Masking" Width="100" Height="30" Margin="5" Click="BtnUnsharpMasking_Click"/>
-                            <Button x:Name="BtnZeroOffset" Content="Zero Offset" Width="100" Height="30" Margin="5" Click="BtnZeroOffset_Click"/>
-                            <Button x:Name="BtnThresholdFilter" Content="Threshold Filter" Width="100" Height="30" Margin="5" Click="BtnThresholdFilter_Click"/>
-                            <TextBox x:Name="txtThresholdValue" Width="60" Height="23" Margin="5,0" VerticalAlignment="Center" Text="0.5"/>
-                            <CheckBox x:Name="chkThresholdAbsolute" Content="절대값 기준" Margin="5,0" VerticalAlignment="Center"/>
-                            <CheckBox x:Name="chkAbsoluteValue" Content="절대값 적용" Margin="5,0" VerticalAlignment="Center"/>
-                            <Button x:Name="BtnHilbertTransform" Content="Hilbert Transform" Width="100" Height="30" Margin="5" Click="BtnHilbertTransform_Click"/>
-                            <CheckBox x:Name="chkHilbertEnvelope" Content="포락선 출력" Margin="5,0" VerticalAlignment="Center" IsChecked="True"/>
+                        <!-- X Scale Control -->
+                        <GroupBox Header="X Scale" Margin="0,5">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Range Labels -->
+                                <TextBlock Text="{Binding ElementName=rangeSliderX, Path=LowerValue, StringFormat={}{0:F0} ns}"
+                                         Grid.Row="0" Grid.Column="0"
+                                         Width="80"
+                                         TextAlignment="Left"
+                                         VerticalAlignment="Center"
+                                         Margin="5,0"/>
+
+                                <TextBlock Text="{Binding ElementName=rangeSliderX, Path=HigherValue, StringFormat={}{0:F0} ns}"
+                                         Grid.Row="0" Grid.Column="2"
+                                         Width="80"
+                                         TextAlignment="Right"
+                                         VerticalAlignment="Center"
+                                         Margin="5,0"/>
+
+                                <!-- Range Slider -->
+                                <xctk:RangeSlider x:Name="rangeSliderX"
+                                        Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+                                        Minimum="0" 
+                                        Maximum="100"
+                                        LowerValue="0"
+                                        HigherValue="100"
+                                        Margin="5"
+                                        PreviewMouseMove="RangeSlider_PreviewMouseMove"/>
+                            </Grid>
+                        </GroupBox>
+
+                        <!-- Y Scale Control -->
+                        <GroupBox Header="Y Scale" Margin="0,5">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Range Labels -->
+                                <TextBlock Text="{Binding ElementName=rangeSliderY, Path=LowerValue, StringFormat=N2}"
+                                         Grid.Row="0" Grid.Column="0"
+                                         Width="40"
+                                         TextAlignment="Left"
+                                         VerticalAlignment="Center"
+                                         Margin="5,0"/>
+
+                                <TextBlock Text="{Binding ElementName=rangeSliderY, Path=HigherValue, StringFormat=N2}"
+                                         Grid.Row="0" Grid.Column="2"
+                                         Width="40"
+                                         TextAlignment="Right"
+                                         VerticalAlignment="Center"
+                                         Margin="5,0"/>
+
+                                <!-- Range Slider -->
+                                <xctk:RangeSlider x:Name="rangeSliderY"
+                                        Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+                                        Minimum="-10" 
+                                        Maximum="10"
+                                        LowerValue="-5"
+                                        HigherValue="5"
+                                        Margin="5"
+                                        PreviewMouseMove="RangeSlider_PreviewMouseMove"/>
+                            </Grid>
+                        </GroupBox>
+
+                        <!-- Preview Area -->
+                        <GroupBox Header="Preview" Margin="0,5">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Preview Legend -->
+                                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5">
+                                    <Rectangle Width="16" Height="12" Fill="#80FF0000" Margin="0,0,5,0"/>
+                                    <TextBlock Text="Selected Range" VerticalAlignment="Center"/>
+                                </StackPanel>
+
+                                <!-- Preview Plot -->
+                                <Border Grid.Row="1" Height="100" Margin="5">
+                                    <ScottPlot:WpfPlot x:Name="plotPreview" 
+                                                      x:FieldModifier="public"/>
+                                </Border>
+                            </Grid>
+                        </GroupBox>
+
+                        <!-- Control Buttons -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5">
+                            <Button Content="Apply" Width="80" Margin="5,0" Click="ApplyScale_Click"/>
+                            <Button Content="Reset Scale" Width="80" Margin="5,0" Click="ResetScale_Click"/>
                         </StackPanel>
                     </StackPanel>
                 </GroupBox>
-
                 <!-- Scale Controls --><!--
                 <GroupBox Header="Scale Controls" 
                          Grid.Row="2" 
