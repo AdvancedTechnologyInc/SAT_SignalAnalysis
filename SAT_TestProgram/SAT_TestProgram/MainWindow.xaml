@@ -317,6 +317,11 @@
                                 Margin="5,0,15,0" 
                                 IsChecked="True"
                                 VerticalAlignment="Center"/>
+                        <CheckBox x:Name="chkContinuousProcessingUpper"
+                                Content="연속 처리"
+                                Margin="5,0,15,0"
+                                IsChecked="False"
+                                VerticalAlignment="Center"/>
                     </StackPanel>
 
                     <!-- Upper Graph -->
@@ -344,6 +349,11 @@
                                 Content="Void Signal" 
                                 Margin="5,0,15,0" 
                                 IsChecked="True"
+                                VerticalAlignment="Center"/>
+                        <CheckBox x:Name="chkContinuousProcessingLower"
+                                Content="연속 처리"
+                                Margin="5,0,15,0"
+                                IsChecked="False"
                                 VerticalAlignment="Center"/>
                     </StackPanel>
 
