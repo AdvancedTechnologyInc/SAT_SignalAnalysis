@@ -733,7 +733,7 @@ namespace SAT_TestProgram
             if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
             {
                 float[] inputData = chkContinuousProcessingLower.IsChecked == true ? 
-                    GetLatestProcessedData(false) : _voidSignalData.YData;
+                    GetLatestProcessedData(true) : _voidSignalData.YData;
 
                 var (magnitudeData, frequencyAxis) = _signalProcessor.PerformFFT(inputData, samplingRate);
                 UpdateProcessedData("FFT", magnitudeData, false, frequencyAxis);
@@ -769,7 +769,7 @@ namespace SAT_TestProgram
             if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
             {
                 float[] inputData = chkContinuousProcessingLower.IsChecked == true ? 
-                    GetLatestProcessedData(false) : _voidSignalData.YData;
+                    GetLatestProcessedData(true) : _voidSignalData.YData;
 
                 float[] processedData = _signalProcessor.FDomainFilter(inputData, middleCutOff, sideCutOff);
                 UpdateProcessedData("FDomain Filter", processedData, false);
@@ -805,7 +805,7 @@ namespace SAT_TestProgram
             if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
             {
                 float[] inputData = chkContinuousProcessingLower.IsChecked == true ? 
-                    GetLatestProcessedData(false) : _voidSignalData.YData;
+                    GetLatestProcessedData(true) : _voidSignalData.YData;
 
                 var (magnitudeData, frequencyAxis) = _signalProcessor.ApplyFrequencyFilter(inputData, middleCutOff, sideCutOff, samplingRate);
                 UpdateProcessedData("Frequency Filter", magnitudeData, false, frequencyAxis);
@@ -841,7 +841,7 @@ namespace SAT_TestProgram
             if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
             {
                 float[] inputData = chkContinuousProcessingLower.IsChecked == true ? 
-                    GetLatestProcessedData(false) : _voidSignalData.YData;
+                    GetLatestProcessedData(true) : _voidSignalData.YData;
 
                 var (timeData, timeAxis) = _signalProcessor.PerformIFFT(inputData, samplingRate);
                 UpdateProcessedData("IFFT", timeData, false, timeAxis);
@@ -874,7 +874,10 @@ namespace SAT_TestProgram
             // Raw Signal 처리
             if (chkRawSignal.IsChecked == true && _rawSignalData?.YData != null)
             {
-                float[] processedData = _signalProcessor.ExtractEnvelope(_rawSignalData.YData);
+                float[] inputData = chkContinuousProcessingUpper.IsChecked == true ? 
+                    GetLatestProcessedData(true) : _rawSignalData.YData;
+
+                float[] processedData = _signalProcessor.ExtractEnvelope(inputData);
                 UpdateProcessedData("Envelope", processedData, true);
                 processedAny = true;
             }
@@ -882,7 +885,10 @@ namespace SAT_TestProgram
             // Void Signal 처리
             if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
             {
-                float[] processedData = _signalProcessor.ExtractEnvelope(_voidSignalData.YData);
+                float[] inputData = chkContinuousProcessingLower.IsChecked == true ? 
+                    GetLatestProcessedData(false) : _voidSignalData.YData;
+
+                float[] processedData = _signalProcessor.ExtractEnvelope(inputData);
                 UpdateProcessedData("Envelope", processedData, false);
                 processedAny = true;
             }
@@ -904,7 +910,10 @@ namespace SAT_TestProgram
             // Raw Signal 처리
             if (chkRawSignal.IsChecked == true && _rawSignalData?.YData != null)
             {
-                float[] processedData = _signalProcessor.FDomainFilterWithEnvelope(_rawSignalData.YData, middleCutOff, sideCutOff);
+                float[] inputData = chkContinuousProcessingUpper.IsChecked == true ? 
+                    GetLatestProcessedData(true) : _rawSignalData.YData;
+
+                float[] processedData = _signalProcessor.FDomainFilterWithEnvelope(inputData, middleCutOff, sideCutOff);
                 UpdateProcessedData("Filter+Envelope", processedData, true);
                 processedAny = true;
             }
@@ -912,7 +921,10 @@ namespace SAT_TestProgram
             // Void Signal 처리
             if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
             {
-                float[] processedData = _signalProcessor.FDomainFilterWithEnvelope(_voidSignalData.YData, middleCutOff, sideCutOff);
+                float[] inputData = chkContinuousProcessingLower.IsChecked == true ? 
+                    GetLatestProcessedData(false) : _voidSignalData.YData;
+
+                float[] processedData = _signalProcessor.FDomainFilterWithEnvelope(inputData, middleCutOff, sideCutOff);
                 UpdateProcessedData("Filter+Envelope", processedData, false);
                 processedAny = true;
             }
