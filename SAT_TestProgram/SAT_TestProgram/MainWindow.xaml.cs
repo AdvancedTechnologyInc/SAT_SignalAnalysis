@@ -23,6 +23,7 @@ using System.IO;
 using ScottPlot.Plottable;
 using Xceed.Wpf.Toolkit;
 using MathNet.Numerics;
+using System.Numerics;
 
 namespace SAT_TestProgram
 {
@@ -662,56 +663,64 @@ namespace SAT_TestProgram
         }
 
         #region Parameter Validation
-        private (bool isValid, double middleCutOff, double sideCutOff, float samplingRate) ValidateAndGetParameters()
+        private (bool isValid, float middleCutOff, float sideCutOff, float samplingRate) ValidateAndGetParameters()
         {
+            float middleCutOff = 0f;
+            float sideCutOff = 0f;
+            float samplingRate = 100f;
+
             try
             {
-                // Middle Cut-off Ratio 검증
-                if (!double.TryParse(txtMiddleCutOffRatio.Text, out double middleCutOff) || 
-                    middleCutOff < 0 || middleCutOff > 1)
+                // Validate and parse middle cut-off frequency
+                if (!float.TryParse(txtMiddleCutOffRatio.Text, out middleCutOff))
                 {
-                    System.Windows.MessageBox.Show(
-                        "Middle Cut-off Ratio는 0과 1 사이의 값이어야 합니다.",
-                        "파라미터 오류",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                    return (false, 0, 0, 0);
+                    System.Windows.MessageBox.Show("중간 차단 주파수가 올바른 숫자 형식이 아닙니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return (false, 0f, 0f, 100f);
                 }
 
-                // Side Cut-off Ratio 검증
-                if (!double.TryParse(txtSideCutoffRatio.Text, out double sideCutOff) || 
-                    sideCutOff < 0 || sideCutOff > 1)
+                // Validate and parse side cut-off frequency
+                if (!float.TryParse(txtSideCutoffRatio.Text, out sideCutOff))
                 {
-                    System.Windows.MessageBox.Show(
-                        "Side Cut-off Ratio는 0과 1 사이의 값이어야 합니다.",
-                        "파라미터 오류",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                    return (false, 0, 0, 0);
+                    System.Windows.MessageBox.Show("측면 차단 주파수가 올바른 숫자 형식이 아닙니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return (false, 0f, 0f, 100f);
                 }
 
-                // Sampling Rate 검증
-                if (!float.TryParse(txtSamplingRate.Text, out float samplingRate) || 
-                    samplingRate <= 0)
+                // Validate and parse sampling rate
+                if (!float.TryParse(txtSamplingRate.Text, out samplingRate))
                 {
-                    System.Windows.MessageBox.Show(
-                        "Sampling Rate는 0보다 큰 값이어야 합니다.",
-                        "파라미터 오류",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                    return (false, 0, 0, 0);
+                    System.Windows.MessageBox.Show("샘플링 레이트가 올바른 숫자 형식이 아닙니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return (false, 0f, 0f, 100f);
                 }
+
+                // Additional validation
+                if (middleCutOff <= 0f)
+                {
+                    System.Windows.MessageBox.Show("중간 차단 주파수는 0보다 커야 합니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return (false, 0f, 0f, 100f);
+                }
+
+                if (sideCutOff <= 0f)
+                {
+                    System.Windows.MessageBox.Show("측면 차단 주파수는 0보다 커야 합니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return (false, 0f, 0f, 100f);
+                }
+
+                if (samplingRate <= 0f)
+                {
+                    System.Windows.MessageBox.Show("샘플링 레이트는 0보다 커야 합니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return (false, 0f, 0f, 100f);
+                }
+
+                // Convert ratio to frequency
+                middleCutOff = middleCutOff * samplingRate / 2f;
+                sideCutOff = sideCutOff * samplingRate / 2f;
 
                 return (true, middleCutOff, sideCutOff, samplingRate);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                System.Windows.MessageBox.Show(
-                    "파라미터 값을 확인해주세요.",
-                    "파라미터 오류",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return (false, 0, 0, 0);
+                System.Windows.MessageBox.Show($"매개변수 검증 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                return (false, 0f, 0f, 100f);
             }
         }
         #endregion
@@ -791,7 +800,7 @@ namespace SAT_TestProgram
             if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
             {
                 float[] inputData = chkContinuousProcessingLower.IsChecked == true ? 
-                    GetLatestProcessedData(true) : _voidSignalData.YData;
+                    GetLatestProcessedData(false) : _voidSignalData.YData;
 
                 float[] processedData = _signalProcessor.FDomainFilter(inputData, middleCutOff, sideCutOff);
                 UpdateProcessedData("FDomain Filter", processedData, false);
@@ -815,8 +824,9 @@ namespace SAT_TestProgram
             // Raw Signal 처리
             if (chkRawSignal.IsChecked == true && _rawSignalData?.YData != null)
             {
-                float[] inputData = chkContinuousProcessingUpper.IsChecked == true ? 
-                    GetLatestProcessedData(true) : _rawSignalData.YData;
+                Complex[] inputData = chkContinuousProcessingUpper.IsChecked == true ? 
+                    GetLatestProcessedComplexData(true) : 
+                    _rawSignalData.YData.Select(y => new Complex(y, 0)).ToArray();
 
                 var (magnitudeData, frequencyAxis, complexData) = _signalProcessor.ApplyFrequencyFilter(inputData, middleCutOff, sideCutOff, samplingRate);
                 UpdateProcessedData("Frequency Filter", magnitudeData, true, frequencyAxis);
@@ -834,8 +844,9 @@ namespace SAT_TestProgram
             // Void Signal 처리
             if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
             {
-                float[] inputData = chkContinuousProcessingLower.IsChecked == true ? 
-                    GetLatestProcessedData(false) : _voidSignalData.YData;
+                Complex[] inputData = chkContinuousProcessingLower.IsChecked == true ? 
+                    GetLatestProcessedComplexData(false) : 
+                    _voidSignalData.YData.Select(y => new Complex(y, 0)).ToArray();
 
                 var (magnitudeData, frequencyAxis, complexData) = _signalProcessor.ApplyFrequencyFilter(inputData, middleCutOff, sideCutOff, samplingRate);
                 UpdateProcessedData("Frequency Filter", magnitudeData, false, frequencyAxis);
@@ -867,8 +878,9 @@ namespace SAT_TestProgram
             // Raw Signal 처리
             if (chkRawSignal.IsChecked == true && _rawSignalData?.YData != null)
             {
-                float[] inputData = chkContinuousProcessingUpper.IsChecked == true ? 
-                    GetLatestProcessedData(true) : _rawSignalData.YData;
+                Complex[] inputData = chkContinuousProcessingUpper.IsChecked == true ? 
+                    GetLatestProcessedComplexData(true) : 
+                    _rawSignalData.YData.Select(y => new Complex(y, 0)).ToArray();
 
                 var (timeData, timeAxis, complexData) = _signalProcessor.PerformIFFT(inputData, samplingRate);
                 UpdateProcessedData("IFFT", timeData, true, timeAxis);
@@ -886,8 +898,9 @@ namespace SAT_TestProgram
             // Void Signal 처리
             if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
             {
-                float[] inputData = chkContinuousProcessingLower.IsChecked == true ? 
-                    GetLatestProcessedData(false) : _voidSignalData.YData;
+                Complex[] inputData = chkContinuousProcessingLower.IsChecked == true ? 
+                    GetLatestProcessedComplexData(false) : 
+                    _voidSignalData.YData.Select(y => new Complex(y, 0)).ToArray();
 
                 var (timeData, timeAxis, complexData) = _signalProcessor.PerformIFFT(inputData, samplingRate);
                 UpdateProcessedData("IFFT", timeData, false, timeAxis);
@@ -909,14 +922,45 @@ namespace SAT_TestProgram
             }
         }
 
-        private float[] GetLatestProcessedData(bool isRawSignal)
+        private float[] GetLatestProcessedData(bool isUpperSignal)
         {
-            var algorithmDatas = _dataManager.GetAllAlgorithmDatas(isRawSignal);
+            var algorithmDatas = _dataManager.GetAllAlgorithmDatas(isUpperSignal);
             if (algorithmDatas != null && algorithmDatas.Any())
-            {
                 return algorithmDatas.Last().YData;
+
+            // If only YData exists, return it
+            return isUpperSignal ? _rawSignalData.YData : _voidSignalData.YData;
+        }
+
+        private Complex[] GetLatestProcessedComplexData(bool isUpperSignal)
+        {
+            var algorithmDatas = _dataManager.GetAllAlgorithmDatas(isUpperSignal);
+            if (algorithmDatas == null || !algorithmDatas.Any())
+                return null;
+
+            var latestData = algorithmDatas.LastOrDefault();
+            if (latestData == null)
+                return null;
+
+            // If ComplexData exists, return it directly
+            if (latestData.ComplexData != null && latestData.ComplexData.Length > 0)
+            {
+                return latestData.ComplexData;
             }
-            return isRawSignal ? _rawSignalData.YData : _voidSignalData.YData;
+
+            // If only YData exists, create new Complex array with zero imaginary parts
+            if (latestData.YData != null)
+            {
+                int n = latestData.YData.Length;
+                Complex[] complexSignal = new Complex[n];
+                for (int i = 0; i < n; i++)
+                {
+                    complexSignal[i] = new Complex(latestData.YData[i], 0);
+                }
+                return complexSignal;
+            }
+
+            return null;
         }
         #endregion
 
