@@ -74,7 +74,7 @@ namespace SAT_TestProgram.Data
         #endregion
 
         #region Filter Methods
-        public float[] FDomainFilter(float[] inputSignal, double middleCutOffRatio = 0.3, double sideCutoffRatio = 0.03)
+        public (float[] frequencyData, float[] frequencyAxis) FDomainFilter(float[] inputSignal, double middleCutOffRatio = 0.3, double sideCutoffRatio = 0.03, float samplingRate = 100f)
         {
             int n = inputSignal.Length;
             Complex[] complexSignal = new Complex[n];
@@ -85,6 +85,20 @@ namespace SAT_TestProgram.Data
             int middleCutOffIndex = (int)(n * middleCutOffRatio / 2);
             int sideCutOffIndex = (int)(n * sideCutoffRatio / 2);
 
+            // 주파수 축 계산
+            float[] frequencyAxis = new float[n];
+            float df = samplingRate / n; // 주파수 해상도
+            for (int i = 0; i < n/2; i++)
+            {
+                frequencyAxis[i] = i * df;
+            }
+            for (int i = n/2; i < n; i++)
+            {
+                frequencyAxis[i] = (i - n) * df;
+            }
+
+            // 필터링 및 magnitude 계산
+            float[] magnitudeSpectrum = new float[n];
             for (int i = 0; i < n; i++)
             {
                 if (!(sideCutOffIndex < i && i < middleCutOffIndex) &&
@@ -92,14 +106,10 @@ namespace SAT_TestProgram.Data
                 {
                     complexSignal[i] = Complex.Zero;
                 }
+                magnitudeSpectrum[i] = (float)complexSignal[i].Magnitude;
             }
 
-            Fourier.Inverse(complexSignal, FourierOptions.Matlab);
-
-            float[] outputSignal = new float[n];
-            for (int i = 0; i < n; i++) outputSignal[i] = (float)complexSignal[i].Real;
-
-            return outputSignal;
+            return (magnitudeSpectrum, frequencyAxis);
         }
 
         public float[] ExtractEnvelope(float[] inputSignal)

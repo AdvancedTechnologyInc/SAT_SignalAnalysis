@@ -32,7 +32,7 @@ namespace SAT_TestProgram
     public partial class MainWindow : System.Windows.Window
     {
         private readonly DataManager _dataManager;
-        private readonly SignalProcessor _signalProcessor;
+        private readonly Models.SignalProcessor _signalProcessor;
         private DataModel _rawSignalData;
         private DataModel _voidSignalData;
         private ObservableCollection<string> _appliedAlgorithms;
@@ -43,7 +43,7 @@ namespace SAT_TestProgram
         {
             InitializeComponent();
             _dataManager = DataManager.Instance;
-            _signalProcessor = new SignalProcessor();
+            _signalProcessor = new Models.SignalProcessor();
 
             // Initialize variables
             _rawSignalData = null;
@@ -250,12 +250,15 @@ namespace SAT_TestProgram
                 {
                     case "FDomainFilter":
                         processedData = _signalProcessor.FDomainFilter(inputData);
+                        UpdateProcessedData(algorithmName, processedData, isRawData);
                         break;
                     case "ExtractEnvelope":
                         processedData = _signalProcessor.ExtractEnvelope(inputData);
+                        UpdateProcessedData(algorithmName, processedData, isRawData);
                         break;
                     case "FilterWithEnvelope":
                         processedData = _signalProcessor.FDomainFilterWithEnvelope(inputData);
+                        UpdateProcessedData(algorithmName, processedData, isRawData);
                         break;
                     case "BScanNorm":
                         if (currentData.Gates == null || currentData.Gates.Count == 0)
@@ -264,6 +267,7 @@ namespace SAT_TestProgram
                             return;
                         }
                         processedData = _signalProcessor.BScanNormalization(inputData, currentData.Gates[0], 0.4f);
+                        UpdateProcessedData(algorithmName, processedData, isRawData);
                         break;
                     case "CScanNorm":
                         if (currentData.Gates == null || currentData.Gates.Count == 0)
@@ -287,7 +291,7 @@ namespace SAT_TestProgram
             }
         }
 
-        private void UpdateProcessedData(string algorithmName, float[] processedData, bool isRawData)
+        private void UpdateProcessedData(string algorithmName, float[] processedData, bool isRawData, float[] customXAxis = null)
         {
             try
             {
@@ -297,7 +301,7 @@ namespace SAT_TestProgram
                 var algorithmData = new AlgorithmDatas
                 {
                     Name = algorithmName,
-                    XData = currentData.XData.ToArray(),
+                    XData = customXAxis ?? currentData.XData.ToArray(),  // 주파수 축이 제공되면 사용, 아니면 기존 X축 사용
                     YData = processedData,
                     Gates = currentData.Gates?.ToList(),
                     FirstMaxIndex = currentData.FirstMaxIndex
@@ -306,7 +310,7 @@ namespace SAT_TestProgram
                 // Add to DataManager
                 _dataManager.AddAlgorithmData(algorithmData, isRawData);
 
-                // Update plot (원본 데이터는 유지)
+                // Update plot
                 var plot = isRawData ? plotUpper.Plot : plotLower.Plot;
                 plot.Clear();
 
