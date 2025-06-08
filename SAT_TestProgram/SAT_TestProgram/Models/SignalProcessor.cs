@@ -303,6 +303,210 @@ namespace SAT_TestProgram.Models
 
             return envelope;
         }
+
+        /// <summary>
+        /// 가우시안 필터를 적용하여 신호를 스무딩합니다.
+        /// </summary>
+        /// <param name="inputSignal">입력 신호</param>
+        /// <param name="sigma">가우시안 표준편차 (기본값 1.0)</param>
+        /// <param name="kernelSize">커널 크기 (기본값 5, 홀수여야 함)</param>
+        /// <returns>필터링된 신호</returns>
+        public float[] ApplyGaussianFilter(float[] inputSignal, double sigma = 1.0, int kernelSize = 5)
+        {
+            if (kernelSize % 2 == 0) kernelSize++; // 커널 크기는 홀수여야 함
+            int radius = kernelSize / 2;
+
+            // 가우시안 커널 생성
+            double[] kernel = new double[kernelSize];
+            double sum = 0;
+            for (int i = 0; i < kernelSize; i++)
+            {
+                int x = i - radius;
+                kernel[i] = Math.Exp(-(x * x) / (2 * sigma * sigma));
+                sum += kernel[i];
+            }
+
+            // 커널 정규화
+            for (int i = 0; i < kernelSize; i++)
+            {
+                kernel[i] /= sum;
+            }
+
+            // 필터링 적용
+            float[] outputSignal = new float[inputSignal.Length];
+            for (int i = 0; i < inputSignal.Length; i++)
+            {
+                double sum2 = 0;
+                double weightSum = 0;
+
+                for (int j = -radius; j <= radius; j++)
+                {
+                    int idx = i + j;
+                    if (idx >= 0 && idx < inputSignal.Length)
+                    {
+                        sum2 += inputSignal[idx] * kernel[j + radius];
+                        weightSum += kernel[j + radius];
+                    }
+                }
+
+                outputSignal[i] = (float)(sum2 / weightSum);
+            }
+
+            return outputSignal;
+        }
+
+        /// <summary>
+        /// 언샤프 마스킹을 적용하여 신호를 선명하게 만듭니다.
+        /// </summary>
+        /// <param name="inputSignal">입력 신호</param>
+        /// <param name="amount">선명도 강도 (기본값 1.5)</param>
+        /// <param name="sigma">가우시안 블러 표준편차 (기본값 1.0)</param>
+        /// <param name="threshold">적용 임계값 (기본값 0)</param>
+        /// <returns>선명화된 신호</returns>
+        public float[] ApplyUnsharpMasking(float[] inputSignal, float amount = 1.5f, double sigma = 1.0, float threshold = 0)
+        {
+            // 가우시안 블러 적용
+            float[] blurred = ApplyGaussianFilter(inputSignal, sigma);
+
+            // 언샤프 마스킹 적용
+            float[] outputSignal = new float[inputSignal.Length];
+            for (int i = 0; i < inputSignal.Length; i++)
+            {
+                float difference = inputSignal[i] - blurred[i];
+                
+                // 임계값 이상인 경우에만 선명화 적용
+                if (Math.Abs(difference) > threshold)
+                {
+                    outputSignal[i] = inputSignal[i] + difference * (amount - 1);
+                }
+                else
+                {
+                    outputSignal[i] = inputSignal[i];
+                }
+            }
+
+            return outputSignal;
+        }
+
+        /// <summary>
+        /// 신호의 Y값을 0을 기준으로 오프셋합니다.
+        /// 전체 신호의 평균값을 계산하여 각 데이터 포인트에서 빼줍니다.
+        /// </summary>
+        /// <param name="inputSignal">입력 신호</param>
+        /// <param name="applyAbsolute">절대값 적용 여부</param>
+        /// <returns>오프셋이 조정된 신호</returns>
+        public float[] ApplyZeroOffset(float[] inputSignal, bool applyAbsolute = false)
+        {
+            if (inputSignal == null || inputSignal.Length == 0)
+                return inputSignal;
+
+            // 평균값 계산
+            float mean = 0;
+            for (int i = 0; i < inputSignal.Length; i++)
+            {
+                mean += inputSignal[i];
+            }
+            mean /= inputSignal.Length;
+
+            // 평균값을 빼서 0 기준으로 오프셋
+            float[] outputSignal = new float[inputSignal.Length];
+            for (int i = 0; i < inputSignal.Length; i++)
+            {
+                float offsetValue = inputSignal[i] - mean;
+                outputSignal[i] = applyAbsolute ? Math.Abs(offsetValue) : offsetValue;
+            }
+
+            return outputSignal;
+        }
+
+        /// <summary>
+        /// 입력 신호에 threshold 필터를 적용합니다.
+        /// threshold 값보다 작은 모든 데이터를 0으로 설정합니다.
+        /// </summary>
+        /// <param name="inputSignal">입력 신호</param>
+        /// <param name="threshold">기준값 (이 값 이하의 데이터는 0으로 설정)</param>
+        /// <param name="useAbsoluteValue">절대값 기준 적용 여부 (true일 경우 절대값 기준으로 비교)</param>
+        /// <returns>필터링된 신호</returns>
+        public float[] ApplyThresholdFilter(float[] inputSignal, float threshold, bool useAbsoluteValue = false)
+        {
+            if (inputSignal == null || inputSignal.Length == 0)
+                return inputSignal;
+
+            float[] outputSignal = new float[inputSignal.Length];
+            for (int i = 0; i < inputSignal.Length; i++)
+            {
+                float value = inputSignal[i];
+                if (useAbsoluteValue)
+                {
+                    // 절대값 기준으로 비교
+                    outputSignal[i] = Math.Abs(value) > threshold ? value : 0;
+                }
+                else
+                {
+                    // 실제 값 기준으로 비교
+                    outputSignal[i] = value > threshold ? value : 0;
+                }
+            }
+
+            return outputSignal;
+        }
+
+        /// <summary>
+        /// 힐버트 변환을 수행하여 신호의 해석적 신호(analytic signal)를 구합니다.
+        /// </summary>
+        /// <param name="inputSignal">입력 신호</param>
+        /// <param name="returnEnvelope">true면 포락선을 반환, false면 위상 변이된 신호를 반환</param>
+        /// <returns>힐버트 변환된 신호 또는 포락선</returns>
+        public float[] ApplyHilbertTransform(float[] inputSignal, bool returnEnvelope = true)
+        {
+            if (inputSignal == null || inputSignal.Length == 0)
+                return inputSignal;
+
+            int n = inputSignal.Length;
+            Complex[] complexSignal = new Complex[n];
+            
+            // 입력 신호를 복소수로 변환
+            for (int i = 0; i < n; i++)
+            {
+                complexSignal[i] = new Complex(inputSignal[i], 0);
+            }
+
+            // FFT 수행
+            Fourier.Forward(complexSignal, FourierOptions.Matlab);
+
+            // 음수 주파수 성분을 0으로 설정하고 양수 주파수 성분을 2배로
+            for (int i = 1; i < n/2; i++)
+            {
+                complexSignal[i] *= 2.0;
+            }
+            for (int i = n/2 + 1; i < n; i++)
+            {
+                complexSignal[i] = Complex.Zero;
+            }
+
+            // IFFT 수행
+            Fourier.Inverse(complexSignal, FourierOptions.Matlab);
+
+            float[] outputSignal = new float[n];
+            if (returnEnvelope)
+            {
+                // 포락선 계산 (magnitude)
+                for (int i = 0; i < n; i++)
+                {
+                    outputSignal[i] = (float)complexSignal[i].Magnitude;
+                }
+            }
+            else
+            {
+                // 위상이 90도 변이된 신호 (imaginary part)
+                for (int i = 0; i < n; i++)
+                {
+                    outputSignal[i] = (float)complexSignal[i].Imaginary;
+                }
+            }
+
+            return outputSignal;
+        }
         #endregion
 
         #region Normalization Methods

@@ -263,7 +263,7 @@ namespace SAT_TestProgram
                     case "BScanNorm":
                         if (currentData.Gates == null || currentData.Gates.Count == 0)
                         {
-                            System.Windows.MessageBox.Show("게이트를 먼저 설정해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                            System.Windows.MessageBox.Show("게이트가 설정되지 않았습니다.", "알림", MessageBoxButton.OK, MessageBoxImage.Warning);
                             return;
                         }
                         processedData = _signalProcessor.BScanNormalization(inputData, currentData.Gates[0], 0.4f);
@@ -272,17 +272,23 @@ namespace SAT_TestProgram
                     case "CScanNorm":
                         if (currentData.Gates == null || currentData.Gates.Count == 0)
                         {
-                            System.Windows.MessageBox.Show("게이트를 먼저 설정해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                            System.Windows.MessageBox.Show("게이트가 설정되지 않았습니다.", "알림", MessageBoxButton.OK, MessageBoxImage.Warning);
                             return;
                         }
+
+                        // CScan 정규화 수행
                         var normalizedValues = _signalProcessor.CScanNormalization(inputData, currentData.Gates, currentData.FirstMaxIndex);
                         processedData = normalizedValues.ToArray();
+                        UpdateProcessedData(algorithmName, processedData, isRawData);
                         break;
-                }
-
-                if (processedData != null)
-                {
-                    UpdateProcessedData(algorithmName, processedData, isRawData);
+                    case "Gaussian Filter":
+                        processedData = _signalProcessor.ApplyGaussianFilter(inputData, sigma: 2.0, kernelSize: 7);
+                        UpdateProcessedData(algorithmName, processedData, isRawData);
+                        break;
+                    case "Unsharp Masking":
+                        processedData = _signalProcessor.ApplyUnsharpMasking(inputData, amount: 1.5f, sigma: 1.0, threshold: 0.1f);
+                        UpdateProcessedData(algorithmName, processedData, isRawData);
+                        break;
                 }
             }
             catch (Exception ex)
@@ -1034,6 +1040,199 @@ namespace SAT_TestProgram
             }
         }
         #endregion
+
+        private void BtnGaussianFilter_Click(object sender, RoutedEventArgs e)
+        {
+            bool processedAny = false;
+
+            // Raw Signal 처리
+            if (chkRawSignal.IsChecked == true && _rawSignalData?.YData != null)
+            {
+                float[] inputData = chkContinuousProcessingUpper.IsChecked == true ? 
+                    GetLatestProcessedData(false) : _rawSignalData.YData;
+
+                float[] processedData = _signalProcessor.ApplyGaussianFilter(inputData, sigma: 2.0, kernelSize: 7);
+                UpdateProcessedData("Gaussian Filter", processedData, true);
+                processedAny = true;
+            }
+
+            // Void Signal 처리
+            if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
+            {
+                float[] inputData = chkContinuousProcessingLower.IsChecked == true ? 
+                    GetLatestProcessedData(true) : _voidSignalData.YData;
+
+                float[] processedData = _signalProcessor.ApplyGaussianFilter(inputData, sigma: 2.0, kernelSize: 7);
+                UpdateProcessedData("Gaussian Filter", processedData, false);
+                processedAny = true;
+            }
+
+            // 둘 다 처리되지 않은 경우
+            if (!processedAny)
+            {
+                System.Windows.MessageBox.Show("처리할 데이터가 없습니다. 데이터를 로드하고 체크박스를 선택해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        private void BtnUnsharpMasking_Click(object sender, RoutedEventArgs e)
+        {
+            bool processedAny = false;
+
+            // Raw Signal 처리
+            if (chkRawSignal.IsChecked == true && _rawSignalData?.YData != null)
+            {
+                float[] inputData = chkContinuousProcessingUpper.IsChecked == true ? 
+                    GetLatestProcessedData(false) : _rawSignalData.YData;
+
+                float[] processedData = _signalProcessor.ApplyUnsharpMasking(inputData, amount: 1.5f, sigma: 1.0, threshold: 0.1f);
+                UpdateProcessedData("Unsharp Masking", processedData, true);
+                processedAny = true;
+            }
+
+            // Void Signal 처리
+            if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
+            {
+                float[] inputData = chkContinuousProcessingLower.IsChecked == true ? 
+                    GetLatestProcessedData(true) : _voidSignalData.YData;
+
+                float[] processedData = _signalProcessor.ApplyUnsharpMasking(inputData, amount: 1.5f, sigma: 1.0, threshold: 0.1f);
+                UpdateProcessedData("Unsharp Masking", processedData, false);
+                processedAny = true;
+            }
+
+            // 둘 다 처리되지 않은 경우
+            if (!processedAny)
+            {
+                System.Windows.MessageBox.Show("처리할 데이터가 없습니다. 데이터를 로드하고 체크박스를 선택해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        private void BtnZeroOffset_Click(object sender, RoutedEventArgs e)
+        {
+            bool processedAny = false;
+            bool applyAbsolute = chkAbsoluteValue.IsChecked == true;
+
+            // Raw Signal 처리
+            if (chkRawSignal.IsChecked == true && _rawSignalData?.YData != null)
+            {
+                float[] inputData = chkContinuousProcessingUpper.IsChecked == true ? 
+                    GetLatestProcessedData(false) : _rawSignalData.YData;
+
+                float[] processedData = _signalProcessor.ApplyZeroOffset(inputData, applyAbsolute);
+                string algorithmName = applyAbsolute ? "Zero Offset (Absolute)" : "Zero Offset";
+                UpdateProcessedData(algorithmName, processedData, true);
+                processedAny = true;
+            }
+
+            // Void Signal 처리
+            if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
+            {
+                float[] inputData = chkContinuousProcessingLower.IsChecked == true ? 
+                    GetLatestProcessedData(true) : _voidSignalData.YData;
+
+                float[] processedData = _signalProcessor.ApplyZeroOffset(inputData, applyAbsolute);
+                string algorithmName = applyAbsolute ? "Zero Offset (Absolute)" : "Zero Offset";
+                UpdateProcessedData(algorithmName, processedData, false);
+                processedAny = true;
+            }
+
+            // 둘 다 처리되지 않은 경우
+            if (!processedAny)
+            {
+                System.Windows.MessageBox.Show("처리할 데이터가 없습니다. 데이터를 로드하고 체크박스를 선택해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        private void BtnThresholdFilter_Click(object sender, RoutedEventArgs e)
+        {
+            // Threshold 값 검증
+            if (!float.TryParse(txtThresholdValue.Text, out float threshold))
+            {
+                System.Windows.MessageBox.Show(
+                    "Threshold 값이 올바르지 않습니다. 숫자를 입력해주세요.",
+                    "파라미터 오류",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            bool processedAny = false;
+            bool useAbsoluteValue = chkThresholdAbsolute.IsChecked == true;
+
+            // Raw Signal 처리
+            if (chkRawSignal.IsChecked == true && _rawSignalData?.YData != null)
+            {
+                float[] inputData = chkContinuousProcessingUpper.IsChecked == true ? 
+                    GetLatestProcessedData(true) : _rawSignalData.YData;
+
+                float[] processedData = _signalProcessor.ApplyThresholdFilter(inputData, threshold, useAbsoluteValue);
+                string algorithmName = useAbsoluteValue ? 
+                    $"Threshold Filter (Abs > {threshold})" : 
+                    $"Threshold Filter (> {threshold})";
+                UpdateProcessedData(algorithmName, processedData, true);
+                processedAny = true;
+            }
+
+            // Void Signal 처리
+            if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
+            {
+                float[] inputData = chkContinuousProcessingLower.IsChecked == true ? 
+                    GetLatestProcessedData(true) : _voidSignalData.YData;
+
+                float[] processedData = _signalProcessor.ApplyThresholdFilter(inputData, threshold, useAbsoluteValue);
+                string algorithmName = useAbsoluteValue ? 
+                    $"Threshold Filter (Abs > {threshold})" : 
+                    $"Threshold Filter (> {threshold})";
+                UpdateProcessedData(algorithmName, processedData, true);
+                processedAny = true;
+            }
+
+            // 둘 다 처리되지 않은 경우
+            if (!processedAny)
+            {
+                System.Windows.MessageBox.Show("처리할 데이터가 없습니다. 데이터를 로드하고 체크박스를 선택해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        private void BtnHilbertTransform_Click(object sender, RoutedEventArgs e)
+        {
+            bool processedAny = false;
+            bool returnEnvelope = chkHilbertEnvelope.IsChecked == true;
+
+            // Raw Signal 처리
+            if (chkRawSignal.IsChecked == true && _rawSignalData?.YData != null)
+            {
+                float[] inputData = chkContinuousProcessingUpper.IsChecked == true ? 
+                    GetLatestProcessedData(true) : _rawSignalData.YData;
+
+                float[] processedData = _signalProcessor.ApplyHilbertTransform(inputData, returnEnvelope);
+                string algorithmName = returnEnvelope ? 
+                    "Hilbert Transform (Envelope)" : 
+                    "Hilbert Transform (Phase)";
+                UpdateProcessedData(algorithmName, processedData, true);
+                processedAny = true;
+            }
+
+            // Void Signal 처리
+            if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
+            {
+                float[] inputData = chkContinuousProcessingLower.IsChecked == true ? 
+                    GetLatestProcessedData(true) : _voidSignalData.YData;
+
+                float[] processedData = _signalProcessor.ApplyHilbertTransform(inputData, returnEnvelope);
+                string algorithmName = returnEnvelope ? 
+                    "Hilbert Transform (Envelope)" : 
+                    "Hilbert Transform (Phase)";
+                UpdateProcessedData(algorithmName, processedData, true);
+                processedAny = true;
+            }
+
+            // 둘 다 처리되지 않은 경우
+            if (!processedAny)
+            {
+                System.Windows.MessageBox.Show("처리할 데이터가 없습니다. 데이터를 로드하고 체크박스를 선택해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
     }
 }
 

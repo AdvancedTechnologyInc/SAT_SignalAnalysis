@@ -384,12 +384,33 @@
             <Grid Background="#FFF5F5F5">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
+                <!-- Signal Processing Controls -->
+                <GroupBox Header="Signal Processing" Grid.Row="0" Margin="5">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="5">
+                            <Button x:Name="BtnGaussianFilter" Content="Gaussian Filter" Width="100" Height="30" Margin="5" Click="BtnGaussianFilter_Click"/>
+                            <Button x:Name="BtnUnsharpMasking" Content="Unsharp Masking" Width="100" Height="30" Margin="5" Click="BtnUnsharpMasking_Click"/>
+                            <Button x:Name="BtnZeroOffset" Content="Zero Offset" Width="100" Height="30" Margin="5" Click="BtnZeroOffset_Click"/>
+                            <Button x:Name="BtnThresholdFilter" Content="Threshold Filter" Width="100" Height="30" Margin="5" Click="BtnThresholdFilter_Click"/>
+                            <TextBox x:Name="txtThresholdValue" Width="60" Height="23" Margin="5,0" VerticalAlignment="Center" Text="0.5"/>
+                            <CheckBox x:Name="chkThresholdAbsolute" Content="절대값 기준" Margin="5,0" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="chkAbsoluteValue" Content="절대값 적용" Margin="5,0" VerticalAlignment="Center"/>
+                            <Button x:Name="BtnHilbertTransform" Content="Hilbert Transform" Width="100" Height="30" Margin="5" Click="BtnHilbertTransform_Click"/>
+                            <CheckBox x:Name="chkHilbertEnvelope" Content="포락선 출력" Margin="5,0" VerticalAlignment="Center" IsChecked="True"/>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+
                 <!-- Scale Controls --><!--
                 <GroupBox Header="Scale Controls" 
-                         Grid.Row="0" 
+                         Grid.Row="2" 
                          Margin="5">
                     <StackPanel>
                         --><!-- X Scale Control --><!--
@@ -476,13 +497,13 @@
                         <GroupBox Header="Preview" Margin="0,5">
                             <Grid>
                                 <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
                                 
                                 --><!-- Preview Legend --><!--
                                 <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5">
-                                    <Rectangle Width="16" Height="16" Fill="#80FF0000" Margin="0,0,5,0"/>
+                                    <Rectangle Width="16" Height="12" Fill="#80FF0000" Margin="0,0,5,0"/>
                                     <TextBlock Text="Selected Range" VerticalAlignment="Center"/>
                                 </StackPanel>
 
