@@ -716,66 +716,6 @@ namespace SAT_TestProgram
                 return (false, 0, 0, 0);
             }
         }
-        //private (bool isValid, float middleCutOff, float sideCutOff, float samplingRate) ValidateAndGetParameters()
-        //{
-        //    float middleCutOff = 0f;
-        //    float sideCutOff = 0f;
-        //    float samplingRate = 100f;
-
-        //    try
-        //    {
-        //        // Validate and parse middle cut-off frequency
-        //        if (!float.TryParse(txtMiddleCutOffRatio.Text, out middleCutOff))
-        //        {
-        //            System.Windows.MessageBox.Show("중간 차단 주파수가 올바른 숫자 형식이 아닙니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
-        //            return (false, 0f, 0f, 100f);
-        //        }
-
-        //        // Validate and parse side cut-off frequency
-        //        if (!float.TryParse(txtSideCutoffRatio.Text, out sideCutOff))
-        //        {
-        //            System.Windows.MessageBox.Show("측면 차단 주파수가 올바른 숫자 형식이 아닙니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
-        //            return (false, 0f, 0f, 100f);
-        //        }
-
-        //        // Validate and parse sampling rate
-        //        if (!float.TryParse(txtSamplingRate.Text, out samplingRate))
-        //        {
-        //            System.Windows.MessageBox.Show("샘플링 레이트가 올바른 숫자 형식이 아닙니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
-        //            return (false, 0f, 0f, 100f);
-        //        }
-
-        //        // Additional validation
-        //        if (middleCutOff <= 0f)
-        //        {
-        //            System.Windows.MessageBox.Show("중간 차단 주파수는 0보다 커야 합니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
-        //            return (false, 0f, 0f, 100f);
-        //        }
-
-        //        if (sideCutOff <= 0f)
-        //        {
-        //            System.Windows.MessageBox.Show("측면 차단 주파수는 0보다 커야 합니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
-        //            return (false, 0f, 0f, 100f);
-        //        }
-
-        //        if (samplingRate <= 0f)
-        //        {
-        //            System.Windows.MessageBox.Show("샘플링 레이트는 0보다 커야 합니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
-        //            return (false, 0f, 0f, 100f);
-        //        }
-
-        //        // Convert ratio to frequency
-        //        middleCutOff = middleCutOff * samplingRate / 2f;
-        //        sideCutOff = sideCutOff * samplingRate / 2f;
-
-        //        return (true, middleCutOff, sideCutOff, samplingRate);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        System.Windows.MessageBox.Show($"매개변수 검증 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
-        //        return (false, 0f, 0f, 100f);
-        //    }
-        //}
         #endregion
 
         #region FFT Algorithm Button Events
@@ -1290,19 +1230,14 @@ namespace SAT_TestProgram
 
         private void BtnThresholdFilter_Click(object sender, RoutedEventArgs e)
         {
-            // Threshold 값 검증
+            bool processedAny = false;
+
+            // 임계값 검증
             if (!float.TryParse(txtThresholdValue.Text, out float threshold))
             {
-                System.Windows.MessageBox.Show(
-                    "Threshold 값이 올바르지 않습니다. 숫자를 입력해주세요.",
-                    "파라미터 오류",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                System.Windows.MessageBox.Show("임계값이 올바른 숫자 형식이 아닙니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-
-            bool processedAny = false;
-            bool useAbsoluteValue = chkThresholdAbsolute.IsChecked == true;
 
             // Raw Signal 처리
             if (chkRawSignal.IsChecked == true && _rawSignalData?.YData != null)
@@ -1310,11 +1245,8 @@ namespace SAT_TestProgram
                 float[] inputData = chkContinuousProcessingUpper.IsChecked == true ? 
                     GetLatestProcessedData(true) : _rawSignalData.YData;
 
-                float[] processedData = _signalProcessor.ApplyThresholdFilter(inputData, threshold, useAbsoluteValue);
-                string algorithmName = useAbsoluteValue ? 
-                    $"Threshold Filter (Abs > {threshold})" : 
-                    $"Threshold Filter (> {threshold})";
-                UpdateProcessedData(algorithmName, processedData, true);
+                float[] processedData = _signalProcessor.ApplyThresholdFilter(inputData, threshold, chkThresholdAbsolute.IsChecked ?? false);
+                UpdateProcessedData("Threshold Filter", processedData, true);
                 processedAny = true;
             }
 
@@ -1322,13 +1254,10 @@ namespace SAT_TestProgram
             if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
             {
                 float[] inputData = chkContinuousProcessingLower.IsChecked == true ? 
-                    GetLatestProcessedData(true) : _voidSignalData.YData;
+                    GetLatestProcessedData(false) : _voidSignalData.YData;
 
-                float[] processedData = _signalProcessor.ApplyThresholdFilter(inputData, threshold, useAbsoluteValue);
-                string algorithmName = useAbsoluteValue ? 
-                    $"Threshold Filter (Abs > {threshold})" : 
-                    $"Threshold Filter (> {threshold})";
-                UpdateProcessedData(algorithmName, processedData, true);
+                float[] processedData = _signalProcessor.ApplyThresholdFilter(inputData, threshold, chkThresholdAbsolute.IsChecked ?? false);
+                UpdateProcessedData("Threshold Filter", processedData, false);
                 processedAny = true;
             }
 
@@ -1342,7 +1271,6 @@ namespace SAT_TestProgram
         private void BtnHilbertTransform_Click(object sender, RoutedEventArgs e)
         {
             bool processedAny = false;
-            bool returnEnvelope = chkHilbertEnvelope.IsChecked == true;
 
             // Raw Signal 처리
             if (chkRawSignal.IsChecked == true && _rawSignalData?.YData != null)
@@ -1350,11 +1278,8 @@ namespace SAT_TestProgram
                 float[] inputData = chkContinuousProcessingUpper.IsChecked == true ? 
                     GetLatestProcessedData(true) : _rawSignalData.YData;
 
-                float[] processedData = _signalProcessor.ApplyHilbertTransform(inputData, returnEnvelope);
-                string algorithmName = returnEnvelope ? 
-                    "Hilbert Transform (Envelope)" : 
-                    "Hilbert Transform (Phase)";
-                UpdateProcessedData(algorithmName, processedData, true);
+                float[] processedData = _signalProcessor.ApplyHilbertTransform(inputData);
+                UpdateProcessedData("Hilbert Transform", processedData, true);
                 processedAny = true;
             }
 
@@ -1362,13 +1287,10 @@ namespace SAT_TestProgram
             if (chkProcessedSignal.IsChecked == true && _voidSignalData?.YData != null)
             {
                 float[] inputData = chkContinuousProcessingLower.IsChecked == true ? 
-                    GetLatestProcessedData(true) : _voidSignalData.YData;
+                    GetLatestProcessedData(false) : _voidSignalData.YData;
 
-                float[] processedData = _signalProcessor.ApplyHilbertTransform(inputData, returnEnvelope);
-                string algorithmName = returnEnvelope ? 
-                    "Hilbert Transform (Envelope)" : 
-                    "Hilbert Transform (Phase)";
-                UpdateProcessedData(algorithmName, processedData, true);
+                float[] processedData = _signalProcessor.ApplyHilbertTransform(inputData);
+                UpdateProcessedData("Hilbert Transform", processedData, false);
                 processedAny = true;
             }
 
