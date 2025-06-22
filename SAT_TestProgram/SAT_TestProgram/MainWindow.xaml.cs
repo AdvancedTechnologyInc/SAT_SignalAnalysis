@@ -376,6 +376,12 @@ namespace SAT_TestProgram
                 {
                     _appliedAlgorithms.Add(algorithmName);
                 }
+
+                // Update preview plot if needed
+                UpdatePreviewPlot();
+
+                // 게이트 시각화 업데이트
+                VisualizeGates();
             }
             catch (Exception ex)
             {
@@ -472,6 +478,9 @@ namespace SAT_TestProgram
 
                 // Update preview plot if needed
                 UpdatePreviewPlot();
+
+                // 게이트 시각화 업데이트
+                VisualizeGates();
             }
             catch (Exception ex)
             {
@@ -1311,6 +1320,13 @@ namespace SAT_TestProgram
         {
             try
             {
+                // _dataManager null 체크
+                if (_dataManager == null)
+                {
+                    System.Windows.MessageBox.Show("DataManager가 초기화되지 않았습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
                 // Bind DataGrid to DataManager's GateDatas
                 dgGateList.ItemsSource = _dataManager.GateDatas;
 
@@ -1333,8 +1349,14 @@ namespace SAT_TestProgram
         /// </summary>
         private void OnGateDataChanged(object sender, GateDatas gateData)
         {
+            // _dataManager null 체크
+            if (_dataManager == null) return;
+
             // UI 업데이트가 필요한 경우 여기서 처리
             UpdateGateButtonStates();
+            
+            // 게이트 시각화 업데이트
+            VisualizeGates();
         }
 
         /// <summary>
@@ -1344,6 +1366,13 @@ namespace SAT_TestProgram
         {
             try
             {
+                // _dataManager null 체크
+                if (_dataManager == null)
+                {
+                    System.Windows.MessageBox.Show("DataManager가 초기화되지 않았습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
                 // 입력값 검증
                 if (!ValidateGateInputs()) return;
 
@@ -1362,6 +1391,9 @@ namespace SAT_TestProgram
                 // 입력 필드 초기화
                 ClearGateInputs();
 
+                // 게이트 시각화 업데이트
+                VisualizeGates();
+
                 System.Windows.MessageBox.Show("게이트가 성공적으로 추가되었습니다.", "성공", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
@@ -1377,6 +1409,13 @@ namespace SAT_TestProgram
         {
             try
             {
+                // _dataManager null 체크
+                if (_dataManager == null)
+                {
+                    System.Windows.MessageBox.Show("DataManager가 초기화되지 않았습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
                 if (_selectedGateIndex < 0)
                 {
                     System.Windows.MessageBox.Show("수정할 게이트를 선택해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -1402,6 +1441,9 @@ namespace SAT_TestProgram
                 ClearGateInputs();
                 _selectedGateIndex = -1;
 
+                // 게이트 시각화 업데이트
+                VisualizeGates();
+
                 System.Windows.MessageBox.Show("게이트가 성공적으로 수정되었습니다.", "성공", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
@@ -1417,6 +1459,13 @@ namespace SAT_TestProgram
         {
             try
             {
+                // _dataManager null 체크
+                if (_dataManager == null)
+                {
+                    System.Windows.MessageBox.Show("DataManager가 초기화되지 않았습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
                 if (_selectedGateIndex < 0)
                 {
                     System.Windows.MessageBox.Show("삭제할 게이트를 선택해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -1438,6 +1487,9 @@ namespace SAT_TestProgram
                     // 입력 필드 초기화
                     ClearGateInputs();
                     _selectedGateIndex = -1;
+
+                    // 게이트 시각화 업데이트
+                    VisualizeGates();
 
                     System.Windows.MessageBox.Show("게이트가 성공적으로 삭제되었습니다.", "성공", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
@@ -1542,6 +1594,187 @@ namespace SAT_TestProgram
             btnAddGate.IsEnabled = true;
             btnModifyGate.IsEnabled = hasSelection;
             btnDeleteGate.IsEnabled = hasSelection;
+        }
+
+        #endregion
+
+        /// <summary>
+        /// 게이트를 그래프에 시각화
+        /// </summary>
+        private void VisualizeGates()
+        {
+            try
+            {
+                // _dataManager null 체크
+                if (_dataManager == null)
+                {
+                    System.Windows.MessageBox.Show("DataManager가 초기화되지 않았습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // 게이트 시각화가 비활성화된 경우 제거만 수행
+                if (chkShowGates?.IsChecked != true)
+                {
+                    ClearGateVisualization();
+                    return;
+                }
+
+                // 기존 게이트 시각화 제거
+                ClearGateVisualization();
+
+                // 모든 게이트 데이터 가져오기
+                var gateDatas = _dataManager.GetAllGateDatas();
+                if (gateDatas == null || gateDatas.Count == 0) return;
+
+                // Raw Signal 그래프에 게이트 표시
+                if (_rawSignalData != null)
+                {
+                    AddGatesToPlot(plotUpper.Plot, gateDatas, "Raw Signal Gates");
+                }
+
+                // Void Signal 그래프에 게이트 표시
+                if (_voidSignalData != null)
+                {
+                    AddGatesToPlot(plotLower.Plot, gateDatas, "Void Signal Gates");
+                }
+
+                // 그래프 새로고침
+                plotUpper.Refresh();
+                plotLower.Refresh();
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"게이트 시각화 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 특정 플롯에 게이트 추가
+        /// </summary>
+        /// <param name="plot">대상 플롯</param>
+        /// <param name="gateDatas">게이트 데이터 리스트</param>
+        /// <param name="legendLabel">범례 라벨</param>
+        private void AddGatesToPlot(ScottPlot.Plot plot, List<GateDatas> gateDatas, string legendLabel)
+        {
+            if (plot == null || gateDatas == null) return;
+
+            // 색상 팔레트 정의
+            var colors = new System.Drawing.Color[]
+            {
+                System.Drawing.Color.Red,
+                System.Drawing.Color.Blue,
+                System.Drawing.Color.Green,
+                System.Drawing.Color.Orange,
+                System.Drawing.Color.Purple,
+                System.Drawing.Color.Brown,
+                System.Drawing.Color.Pink,
+                System.Drawing.Color.Cyan
+            };
+
+            for (int i = 0; i < gateDatas.Count; i++)
+            {
+                var gateData = gateDatas[i];
+                var color = colors[i % colors.Length];
+                var areaColor = System.Drawing.Color.FromArgb(30, color.R, color.G, color.B);
+
+                // 게이트 시작점에 수직선 추가
+                var startLine = plot.AddVerticalLine(gateData.GateStart, 
+                    color, 
+                    2, 
+                    ScottPlot.LineStyle.Solid, 
+                    $"Gate {gateData.Index} Start");
+
+                // 게이트 끝점에 수직선 추가
+                var stopLine = plot.AddVerticalLine(gateData.GateStop, 
+                    color, 
+                    2, 
+                    ScottPlot.LineStyle.Solid, 
+                    $"Gate {gateData.Index} Stop");
+
+                // 게이트 구간에 반투명 영역 추가 (ScottPlot 4.x에서는 다른 방법 사용)
+                var axisLimits = plot.GetAxisLimits();
+                var rectX = new double[] { gateData.GateStart, gateData.GateStart, gateData.GateStop, gateData.GateStop };
+                var rectY = new double[] { axisLimits.YMin, axisLimits.YMax, axisLimits.YMax, axisLimits.YMin };
+                
+                var gateArea = plot.AddPolygon(rectX, rectY, areaColor);
+
+                // 거리 정보를 텍스트로 표시
+                var centerX = gateData.GateStart + (gateData.GateStop - gateData.GateStart) / 2;
+                var textY = axisLimits.YMax * 0.95;
+                var distanceText = plot.AddText(
+                    $"Gate {gateData.Index}: {gateData.Distance:F2}", 
+                    centerX, 
+                    textY);
+
+                // 게이트 번호를 시작점에 표시
+                var gateNumberText = plot.AddText(
+                    $"G{gateData.Index}", 
+                    gateData.GateStart, 
+                    axisLimits.YMax * 0.85);
+            }
+        }
+
+        /// <summary>
+        /// 게이트 시각화 제거
+        /// </summary>
+        private void ClearGateVisualization()
+        {
+            try
+            {
+                // Raw Signal 그래프에서 게이트 관련 요소 제거
+                if (plotUpper?.Plot != null)
+                {
+                    var upperPlottables = plotUpper.Plot.GetPlottables().ToList();
+                    foreach (var plottable in upperPlottables)
+                    {
+                        // VLine은 Label 속성이 있으므로 그대로 사용
+                        if (plottable is ScottPlot.Plottable.VLine vLine && vLine.Label.Contains("Gate"))
+                        {
+                            plotUpper.Plot.Remove(plottable);
+                        }
+                    }
+                }
+
+                // Void Signal 그래프에서 게이트 관련 요소 제거
+                if (plotLower?.Plot != null)
+                {
+                    var lowerPlottables = plotLower.Plot.GetPlottables().ToList();
+                    foreach (var plottable in lowerPlottables)
+                    {
+                        // VLine은 Label 속성이 있으므로 그대로 사용
+                        if (plottable is ScottPlot.Plottable.VLine vLine && vLine.Label.Contains("Gate"))
+                        {
+                            plotLower.Plot.Remove(plottable);
+                        }
+                    }
+                }
+
+                // 그래프 새로고침
+                plotUpper?.Refresh();
+                plotLower?.Refresh();
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"게이트 시각화 제거 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        #region Gate Visualization Toggle
+
+        /// <summary>
+        /// 게이트 시각화 체크박스 체크 이벤트
+        /// </summary>
+        private void ChkShowGates_Checked(object sender, RoutedEventArgs e)
+        {
+            VisualizeGates();
+        }
+
+        /// <summary>
+        /// 게이트 시각화 체크박스 언체크 이벤트
+        /// </summary>
+        private void ChkShowGates_Unchecked(object sender, RoutedEventArgs e)
+        {
+            ClearGateVisualization();
         }
 
         #endregion
