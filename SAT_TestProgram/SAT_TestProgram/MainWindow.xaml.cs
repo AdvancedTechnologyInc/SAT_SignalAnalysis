@@ -2070,6 +2070,67 @@ namespace SAT_TestProgram
         }
 
         #endregion
+
+        /// <summary>
+        /// Save 버튼 클릭 이벤트 - 게이트 설정을 텍스트 파일로 저장
+        /// </summary>
+        private void BtnSaveGate_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // _dataManager null 체크
+                if (_dataManager == null)
+                {
+                    System.Windows.MessageBox.Show("DataManager가 초기화되지 않았습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // 저장할 파일 경로 선택
+                SaveFileDialog saveFileDialog = new SaveFileDialog
+                {
+                    Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*",
+                    FilterIndex = 1,
+                    DefaultExt = "txt",
+                    Title = "게이트 설정 저장"
+                };
+
+                if (saveFileDialog.ShowDialog() != true)
+                {
+                    return; // 사용자가 취소한 경우
+                }
+
+                // 게이트 데이터 가져오기
+                var gateDatas = _dataManager.GetAllGateDatas();
+                
+                // 파일에 저장할 내용 생성
+                var lines = new List<string>();
+                
+                // Index Start, Index Stop
+                lines.Add(_dataManager.IndexStart.ToString());
+                lines.Add(_dataManager.IndexStop.ToString());
+                
+                // 게이트 정보 추가
+                if (gateDatas != null && gateDatas.Count > 0)
+                {
+                    for (int i = 0; i < gateDatas.Count; i++)
+                    {
+                        var gate = gateDatas[i];
+                        lines.Add($"{gate.GateStart:F2}, {gate.GateStop:F2}");
+                    }
+                }
+
+                // 파일에 저장
+                File.WriteAllLines(saveFileDialog.FileName, lines, Encoding.UTF8);
+
+                System.Windows.MessageBox.Show($"게이트 설정이 성공적으로 저장되었습니다.\n파일: {saveFileDialog.FileName}", 
+                    "저장 완료", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"게이트 설정 저장 중 오류 발생: {ex.Message}", 
+                    "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
     }
 }
 
