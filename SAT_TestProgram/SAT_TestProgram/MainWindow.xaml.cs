@@ -42,6 +42,9 @@ namespace SAT_TestProgram
 
         // Gate Editor 관련 필드
         private int _selectedGateIndex = -1;
+        
+        // 게이트 시각화 요소 추적
+        private List<ScottPlot.Plottable.IPlottable> _gateVisualElements = new List<ScottPlot.Plottable.IPlottable>();
 
         public MainWindow()
         {
@@ -1675,7 +1678,6 @@ namespace SAT_TestProgram
             {
                 var gateData = gateDatas[i];
                 var color = colors[i % colors.Length];
-                var areaColor = System.Drawing.Color.FromArgb(30, color.R, color.G, color.B);
 
                 // 게이트 시작점에 수직선 추가
                 var startLine = plot.AddVerticalLine(gateData.GateStart, 
@@ -1683,6 +1685,7 @@ namespace SAT_TestProgram
                     2, 
                     ScottPlot.LineStyle.Solid, 
                     $"Gate {gateData.Index} Start");
+                _gateVisualElements.Add(startLine);
 
                 // 게이트 끝점에 수직선 추가
                 var stopLine = plot.AddVerticalLine(gateData.GateStop, 
@@ -1690,13 +1693,16 @@ namespace SAT_TestProgram
                     2, 
                     ScottPlot.LineStyle.Solid, 
                     $"Gate {gateData.Index} Stop");
+                _gateVisualElements.Add(stopLine);
 
                 // 게이트 구간에 반투명 영역 추가 (ScottPlot 4.x에서는 다른 방법 사용)
                 var axisLimits = plot.GetAxisLimits();
                 var rectX = new double[] { gateData.GateStart, gateData.GateStart, gateData.GateStop, gateData.GateStop };
                 var rectY = new double[] { axisLimits.YMin, axisLimits.YMax, axisLimits.YMax, axisLimits.YMin };
                 
+                var areaColor = System.Drawing.Color.FromArgb(30, color.R, color.G, color.B);
                 var gateArea = plot.AddPolygon(rectX, rectY, areaColor);
+                _gateVisualElements.Add(gateArea);
 
                 // 거리 정보를 텍스트로 표시
                 var centerX = gateData.GateStart + (gateData.GateStop - gateData.GateStart) / 2;
@@ -1705,12 +1711,14 @@ namespace SAT_TestProgram
                     $"Gate {gateData.Index}: {gateData.Distance:F2}", 
                     centerX, 
                     textY);
+                _gateVisualElements.Add(distanceText);
 
                 // 게이트 번호를 시작점에 표시
                 var gateNumberText = plot.AddText(
                     $"G{gateData.Index}", 
                     gateData.GateStart, 
                     axisLimits.YMax * 0.85);
+                _gateVisualElements.Add(gateNumberText);
             }
         }
 
@@ -1721,33 +1729,28 @@ namespace SAT_TestProgram
         {
             try
             {
-                // Raw Signal 그래프에서 게이트 관련 요소 제거
-                if (plotUpper?.Plot != null)
+                // 추적된 게이트 시각화 요소들을 제거
+                foreach (var element in _gateVisualElements)
                 {
-                    var upperPlottables = plotUpper.Plot.GetPlottables().ToList();
-                    foreach (var plottable in upperPlottables)
+                    try
                     {
-                        // VLine은 Label 속성이 있으므로 그대로 사용
-                        if (plottable is ScottPlot.Plottable.VLine vLine && vLine.Label.Contains("Gate"))
+                        if (plotUpper?.Plot != null)
                         {
-                            plotUpper.Plot.Remove(plottable);
+                            plotUpper.Plot.Remove(element);
                         }
+                        if (plotLower?.Plot != null)
+                        {
+                            plotLower.Plot.Remove(element);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        // 요소가 이미 제거되었거나 존재하지 않는 경우 무시
                     }
                 }
 
-                // Void Signal 그래프에서 게이트 관련 요소 제거
-                if (plotLower?.Plot != null)
-                {
-                    var lowerPlottables = plotLower.Plot.GetPlottables().ToList();
-                    foreach (var plottable in lowerPlottables)
-                    {
-                        // VLine은 Label 속성이 있으므로 그대로 사용
-                        if (plottable is ScottPlot.Plottable.VLine vLine && vLine.Label.Contains("Gate"))
-                        {
-                            plotLower.Plot.Remove(plottable);
-                        }
-                    }
-                }
+                // 추적 리스트 초기화
+                _gateVisualElements.Clear();
 
                 // 그래프 새로고침
                 plotUpper?.Refresh();
