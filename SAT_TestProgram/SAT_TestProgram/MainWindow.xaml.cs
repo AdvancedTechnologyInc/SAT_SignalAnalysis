@@ -92,6 +92,14 @@ namespace SAT_TestProgram
 
                 // Set initial axis limits
                 InitializeAxisLimits();
+                
+                // Add mouse move event handlers for mouse position tracking
+                plotUpper.MouseMove += Plot_MouseMove;
+                plotLower.MouseMove += Plot_MouseMove;
+                
+                // Add mouse leave event handlers to clear position info
+                plotUpper.MouseLeave += Plot_MouseLeave;
+                plotLower.MouseLeave += Plot_MouseLeave;
             }
             catch (Exception ex)
             {
@@ -716,26 +724,81 @@ namespace SAT_TestProgram
 
         private void Plot_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (sender is WpfPlot plot)
+            try
             {
-                // 클릭된 그래프의 데이터 가져오기
-                DataModel selectedData = null;
-                if (plot == plotUpper && _rawSignalData != null)
-                {
-                    selectedData = _rawSignalData;
-                }
-                else if (plot == plotLower && _voidSignalData != null)
-                {
-                    selectedData = _voidSignalData;
-                }
+                var plot = sender as ScottPlot.WpfPlot;
+                if (plot == null) return;
 
-                // 데이터가 있는 경우에만 업데이트
-                if (selectedData?.Volt != null && selectedData.Volt.Length > 0)
+                var mousePos = plot.GetMouseCoordinates();
+                int index = (int)Math.Round(mousePos.x);
+
+                // 좌클릭: Gate Start, 우클릭: Gate Stop
+                if (e.LeftButton == MouseButtonState.Pressed)
                 {
-                    UpdateSliderRanges(selectedData);
-                    _dataManager.SetCurrentData(selectedData);
-                    UpdatePreviewPlot();
+                    txtGateStart.Text = index.ToString();
                 }
+                else if (e.RightButton == MouseButtonState.Pressed)
+                {
+                    txtGateStop.Text = index.ToString();
+                }
+            }
+            catch { /* 무시 */ }
+        }
+
+        /// <summary>
+        /// 마우스 이동 이벤트 핸들러 - 마우스 위치의 Index와 Value를 표시
+        /// </summary>
+        private void Plot_MouseMove(object sender, MouseEventArgs e)
+        {
+            try
+            {
+                var plot = sender as ScottPlot.WpfPlot;
+                if (plot == null) return;
+
+                // Get mouse position in plot coordinates
+                var mousePos = plot.GetMouseCoordinates();
+                int index = (int)Math.Round(mousePos.x);
+                double value = mousePos.y;
+
+                // Update the appropriate text block based on which plot
+                if (plot == plotUpper)
+                {
+                    txtUpperMousePosition.Text = $"Index: {index}, Value: {value:F3}";
+                }
+                else if (plot == plotLower)
+                {
+                    txtLowerMousePosition.Text = $"Index: {index}, Value: {value:F3}";
+                }
+            }
+            catch (Exception ex)
+            {
+                // Silently handle any errors during mouse move
+            }
+        }
+
+        /// <summary>
+        /// 마우스가 그래프 영역을 벗어날 때 위치 정보를 초기화
+        /// </summary>
+        private void Plot_MouseLeave(object sender, MouseEventArgs e)
+        {
+            try
+            {
+                var plot = sender as ScottPlot.WpfPlot;
+                if (plot == null) return;
+
+                // 해당 그래프의 위치 정보만 초기화
+                if (plot == plotUpper)
+                {
+                    txtUpperMousePosition.Text = "Index: --, Value: --";
+                }
+                else if (plot == plotLower)
+                {
+                    txtLowerMousePosition.Text = "Index: --, Value: --";
+                }
+            }
+            catch (Exception ex)
+            {
+                // Silently handle any errors during mouse leave
             }
         }
 

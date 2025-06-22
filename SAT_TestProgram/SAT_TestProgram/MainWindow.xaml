@@ -207,6 +207,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     
                     <!-- Upper Graph Controls -->
@@ -233,6 +234,21 @@
                            BorderThickness="1">
                         <ScottPlot:WpfPlot x:Name="plotUpper"/>
                     </Border>
+                    
+                    <!-- Upper Graph Mouse Position Info -->
+                    <StackPanel Grid.Row="2" 
+                              Orientation="Horizontal" 
+                              Margin="10,2,5,5"
+                              Background="#F0F0F0">
+                        <TextBlock Text="Mouse Position: " 
+                                 FontWeight="Bold" 
+                                 VerticalAlignment="Center" 
+                                 Margin="5,0"/>
+                        <TextBlock x:Name="txtUpperMousePosition" 
+                                 Text="Index: --, Value: --" 
+                                 VerticalAlignment="Center" 
+                                 Margin="5,0"/>
+                    </StackPanel>
                 </Grid>
 
                 <!-- Lower Graph Section -->
@@ -240,6 +256,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     
                     <!-- Lower Graph Controls -->
@@ -266,6 +283,21 @@
                            BorderThickness="1">
                         <ScottPlot:WpfPlot x:Name="plotLower"/>
                     </Border>
+                    
+                    <!-- Lower Graph Mouse Position Info -->
+                    <StackPanel Grid.Row="2" 
+                              Orientation="Horizontal" 
+                              Margin="10,2,5,5"
+                              Background="#F0F0F0">
+                        <TextBlock Text="Mouse Position: " 
+                                 FontWeight="Bold" 
+                                 VerticalAlignment="Center" 
+                                 Margin="5,0"/>
+                        <TextBlock x:Name="txtLowerMousePosition" 
+                                 Text="Index: --, Value: --" 
+                                 VerticalAlignment="Center" 
+                                 Margin="5,0"/>
+                    </StackPanel>
                 </Grid>
             </Grid>
         </GroupBox>
