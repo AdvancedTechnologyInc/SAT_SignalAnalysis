@@ -1582,7 +1582,7 @@ namespace SAT_TestProgram
         private void ClearGateInputs()
         {
             txtIndexStart.Text = "0";
-            txtIndexStop.Text = "100";
+            txtIndexStop.Text = "0";
             txtGateStart.Text = "0.0";
             txtGateStop.Text = "1.0";
         }
@@ -1611,7 +1611,7 @@ namespace SAT_TestProgram
                 // _dataManager null 체크
                 if (_dataManager == null)
                 {
-                    System.Windows.MessageBox.Show("DataManager가 초기화되지 않았습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                    //System.Windows.MessageBox.Show("DataManager가 초기화되지 않았습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
