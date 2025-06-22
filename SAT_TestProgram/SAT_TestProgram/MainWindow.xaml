@@ -384,6 +384,7 @@
                             <Button x:Name="btnDeleteGate" Content="Delete" Width="60" Margin="5,0" Click="BtnDeleteGate_Click"/>
                             <Button x:Name="btnInterval" Content="Interval" Width="60" Margin="5,0" Click="BtnInterval_Click"/>
                             <Button x:Name="btnSaveGate" Content="Save" Width="60" Margin="5,0" Click="BtnSaveGate_Click"/>
+                            <Button x:Name="btnLoadGate" Content="Load" Width="60" Margin="5,0" Click="BtnLoadGate_Click"/>
                         </StackPanel>
 
                         <!-- Gate Visualization Toggle -->

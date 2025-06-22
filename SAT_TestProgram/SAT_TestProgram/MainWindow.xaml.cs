@@ -2131,6 +2131,122 @@ namespace SAT_TestProgram
                     "오류", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+        /// <summary>
+        /// Load 버튼 클릭 이벤트 - 게이트 설정을 텍스트 파일에서 로드
+        /// </summary>
+        private void BtnLoadGate_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // _dataManager null 체크
+                if (_dataManager == null)
+                {
+                    System.Windows.MessageBox.Show("DataManager가 초기화되지 않았습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // 로드할 파일 경로 선택
+                OpenFileDialog openFileDialog = new OpenFileDialog
+                {
+                    Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*",
+                    FilterIndex = 1,
+                    Title = "게이트 설정 로드"
+                };
+
+                if (openFileDialog.ShowDialog() != true)
+                {
+                    return; // 사용자가 취소한 경우
+                }
+
+                // 파일 읽기
+                string[] lines = File.ReadAllLines(openFileDialog.FileName, Encoding.UTF8);
+                
+                if (lines.Length < 2)
+                {
+                    System.Windows.MessageBox.Show("파일 형식이 올바르지 않습니다. 최소 2줄(Index Start, Index Stop)이 필요합니다.", 
+                        "파일 형식 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Index Start, Index Stop 파싱
+                if (!int.TryParse(lines[0], out int indexStart) || indexStart < 0)
+                {
+                    System.Windows.MessageBox.Show("Index Start 값이 올바르지 않습니다.", 
+                        "파싱 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (!int.TryParse(lines[1], out int indexStop) || indexStop < 0)
+                {
+                    System.Windows.MessageBox.Show("Index Stop 값이 올바르지 않습니다.", 
+                        "파싱 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // DataManager에 Index Start/Stop 설정
+                _dataManager.IndexStart = indexStart;
+                _dataManager.IndexStop = indexStop;
+
+                // UI 업데이트
+                txtIndexStart.Text = indexStart.ToString();
+                txtIndexStop.Text = indexStop.ToString();
+
+                // 기존 게이트 데이터 모두 삭제
+                _dataManager.ClearGateDatas();
+
+                // 게이트 데이터 파싱 (3번째 줄부터)
+                for (int i = 2; i < lines.Length; i++)
+                {
+                    string line = lines[i].Trim();
+                    if (string.IsNullOrEmpty(line)) continue;
+
+                    // 쉼표로 구분된 값 파싱
+                    string[] parts = line.Split(',');
+                    if (parts.Length != 2)
+                    {
+                        System.Windows.MessageBox.Show($"게이트 데이터 형식이 올바르지 않습니다. (줄 {i + 1}): {line}", 
+                            "파싱 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        continue;
+                    }
+
+                    if (!double.TryParse(parts[0].Trim(), out double gateStart))
+                    {
+                        System.Windows.MessageBox.Show($"Gate Start 값이 올바르지 않습니다. (줄 {i + 1}): {parts[0]}", 
+                            "파싱 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        continue;
+                    }
+
+                    if (!double.TryParse(parts[1].Trim(), out double gateStop))
+                    {
+                        System.Windows.MessageBox.Show($"Gate Stop 값이 올바르지 않습니다. (줄 {i + 1}): {parts[1]}", 
+                            "파싱 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        continue;
+                    }
+
+                    // 게이트 데이터 생성 및 추가
+                    var gateData = new GateDatas
+                    {
+                        GateStart = gateStart,
+                        GateStop = gateStop,
+                        Name = $"Gate_{i - 1}" // 2번째 줄부터 시작하므로 i-1
+                    };
+
+                    _dataManager.AddGateData(gateData);
+                }
+
+                // 게이트 시각화 업데이트
+                VisualizeGates();
+
+                System.Windows.MessageBox.Show($"게이트 설정이 성공적으로 로드되었습니다.\n파일: {openFileDialog.FileName}\n로드된 게이트 수: {_dataManager.GateDataCount}", 
+                    "로드 완료", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"게이트 설정 로드 중 오류 발생: {ex.Message}", 
+                    "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
     }
 }
 
