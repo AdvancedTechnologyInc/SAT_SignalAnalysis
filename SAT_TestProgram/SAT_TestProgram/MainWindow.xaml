@@ -338,6 +338,7 @@
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
@@ -367,6 +368,12 @@
                                          VerticalAlignment="Center" Margin="5,2"/>
                                 <TextBox x:Name="txtGateStop" Grid.Row="3" Grid.Column="1" 
                                        Margin="5,2" Text="1.0"/>
+
+                                <!-- Gate Num -->
+                                <TextBlock Text="Gate Num:" Grid.Row="4" Grid.Column="0" 
+                                         VerticalAlignment="Center" Margin="5,2"/>
+                                <TextBox x:Name="txtGateNum" Grid.Row="4" Grid.Column="1" 
+                                       Margin="5,2" Text="5"/>
                             </Grid>
                         </GroupBox>
 
@@ -375,6 +382,7 @@
                             <Button x:Name="btnAddGate" Content="Add" Width="60" Margin="5,0" Click="BtnAddGate_Click"/>
                             <Button x:Name="btnModifyGate" Content="Modify" Width="60" Margin="5,0" Click="BtnModifyGate_Click"/>
                             <Button x:Name="btnDeleteGate" Content="Delete" Width="60" Margin="5,0" Click="BtnDeleteGate_Click"/>
+                            <Button x:Name="btnInterval" Content="Interval" Width="60" Margin="5,0" Click="BtnInterval_Click"/>
                         </StackPanel>
 
                         <!-- Gate Visualization Toggle -->

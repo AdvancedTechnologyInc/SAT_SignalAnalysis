@@ -1676,6 +1676,94 @@ namespace SAT_TestProgram
         }
 
         /// <summary>
+        /// Interval 버튼 클릭 이벤트 - 자동으로 여러 게이트 생성
+        /// </summary>
+        private void BtnInterval_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // _dataManager null 체크
+                if (_dataManager == null)
+                {
+                    System.Windows.MessageBox.Show("DataManager가 초기화되지 않았습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // 입력값 검증
+                if (!int.TryParse(txtIndexStart.Text, out int indexStart) || indexStart < 0)
+                {
+                    System.Windows.MessageBox.Show("Index Start는 0 이상의 정수여야 합니다.", "입력 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (!int.TryParse(txtIndexStop.Text, out int indexStop) || indexStop < 0)
+                {
+                    System.Windows.MessageBox.Show("Index Stop은 0 이상의 정수여야 합니다.", "입력 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (!int.TryParse(txtGateNum.Text, out int gateNum) || gateNum <= 0)
+                {
+                    System.Windows.MessageBox.Show("Gate Num은 1 이상의 정수여야 합니다.", "입력 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // 데이터가 로드되어 있는지 확인
+                if (_dataManager.CurrentData?.YData == null)
+                {
+                    System.Windows.MessageBox.Show("데이터가 로드되지 않았습니다. 먼저 데이터를 로드해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                // Index Start/Stop을 DataManager에 업데이트
+                _dataManager.IndexStart = indexStart;
+                _dataManager.IndexStop = indexStop;
+
+                // 유효한 범위 계산
+                int dataLength = _dataManager.CurrentData.YData.Length;
+                int validEndIndex = dataLength - indexStop;
+                
+                if (indexStart >= validEndIndex)
+                {
+                    System.Windows.MessageBox.Show("Index Start가 유효한 범위를 벗어났습니다.", "입력 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // 구간을 Gate Num만큼 나누기
+                int totalRange = validEndIndex - indexStart;
+                double intervalSize = (double)totalRange / gateNum;
+
+                // 기존 게이트 데이터 모두 삭제
+                _dataManager.ClearGateDatas();
+
+                // 새로운 게이트들 생성
+                for (int i = 0; i < gateNum; i++)
+                {
+                    double gateStart = indexStart + (i * intervalSize);
+                    double gateStop = indexStart + ((i + 1) * intervalSize);
+
+                    var gateData = new GateDatas
+                    {
+                        GateStart = gateStart,
+                        GateStop = gateStop,
+                        Name = $"Gate_{i + 1}"
+                    };
+
+                    _dataManager.AddGateData(gateData);
+                }
+
+                // 게이트 시각화 업데이트
+                VisualizeGates();
+
+                System.Windows.MessageBox.Show($"{gateNum}개의 게이트가 성공적으로 생성되었습니다.", "성공", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Interval 게이트 생성 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
         /// DataGrid 선택 변경 이벤트
         /// </summary>
         private void DgGateList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -1785,6 +1873,7 @@ namespace SAT_TestProgram
             }
             txtGateStart.Text = "0.0";
             txtGateStop.Text = "1.0";
+            txtGateNum.Text = "5";
         }
 
         /// <summary>
