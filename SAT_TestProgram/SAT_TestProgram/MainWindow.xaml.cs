@@ -40,6 +40,9 @@ namespace SAT_TestProgram
         private ScatterPlot rawScatter;
         private ScatterPlot voidScatter;
 
+        // Gate Editor 관련 필드
+        private int _selectedGateIndex = -1;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -59,6 +62,9 @@ namespace SAT_TestProgram
             // Add mouse click event handlers for plots
             plotUpper.MouseDown += Plot_MouseDown;
             plotLower.MouseDown += Plot_MouseDown;
+
+            // Initialize Gate Editor
+            InitializeGateEditor();
         }
 
         private void InitializePlots()
@@ -1300,6 +1306,245 @@ namespace SAT_TestProgram
                 System.Windows.MessageBox.Show("처리할 데이터가 없습니다. 데이터를 로드하고 체크박스를 선택해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
+
+        private void InitializeGateEditor()
+        {
+            try
+            {
+                // Bind DataGrid to DataManager's GateDatas
+                dgGateList.ItemsSource = _dataManager.GateDatas;
+
+                // Subscribe to gate data changes
+                _dataManager.OnGateDataChanged += OnGateDataChanged;
+
+                // Set initial button states
+                UpdateGateButtonStates();
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"게이트 편집기 초기화 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        #region Gate Editor Event Handlers
+
+        /// <summary>
+        /// 게이트 데이터 변경 이벤트 핸들러
+        /// </summary>
+        private void OnGateDataChanged(object sender, GateDatas gateData)
+        {
+            // UI 업데이트가 필요한 경우 여기서 처리
+            UpdateGateButtonStates();
+        }
+
+        /// <summary>
+        /// Add 버튼 클릭 이벤트
+        /// </summary>
+        private void BtnAddGate_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // 입력값 검증
+                if (!ValidateGateInputs()) return;
+
+                // 새로운 게이트 데이터 생성
+                var gateData = new GateDatas
+                {
+                    Index = int.Parse(txtIndexStart.Text),
+                    GateStart = double.Parse(txtGateStart.Text),
+                    GateStop = double.Parse(txtGateStop.Text),
+                    Name = $"Gate_{_dataManager.GateDataCount + 1}"
+                };
+
+                // DataManager에 추가
+                _dataManager.AddGateData(gateData);
+
+                // 입력 필드 초기화
+                ClearGateInputs();
+
+                System.Windows.MessageBox.Show("게이트가 성공적으로 추가되었습니다.", "성공", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"게이트 추가 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Modify 버튼 클릭 이벤트
+        /// </summary>
+        private void BtnModifyGate_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (_selectedGateIndex < 0)
+                {
+                    System.Windows.MessageBox.Show("수정할 게이트를 선택해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                // 입력값 검증
+                if (!ValidateGateInputs()) return;
+
+                // 게이트 데이터 수정
+                var gateData = new GateDatas
+                {
+                    Index = int.Parse(txtIndexStart.Text),
+                    GateStart = double.Parse(txtGateStart.Text),
+                    GateStop = double.Parse(txtGateStop.Text),
+                    Name = $"Gate_{_selectedGateIndex + 1}"
+                };
+
+                // DataManager에서 수정
+                _dataManager.UpdateGateData(_selectedGateIndex, gateData);
+
+                // 입력 필드 초기화
+                ClearGateInputs();
+                _selectedGateIndex = -1;
+
+                System.Windows.MessageBox.Show("게이트가 성공적으로 수정되었습니다.", "성공", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"게이트 수정 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Delete 버튼 클릭 이벤트
+        /// </summary>
+        private void BtnDeleteGate_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (_selectedGateIndex < 0)
+                {
+                    System.Windows.MessageBox.Show("삭제할 게이트를 선택해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                // 확인 메시지
+                var result = System.Windows.MessageBox.Show(
+                    "선택한 게이트를 삭제하시겠습니까?", 
+                    "확인", 
+                    MessageBoxButton.YesNo, 
+                    MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    // DataManager에서 삭제
+                    _dataManager.RemoveGateData(_selectedGateIndex);
+
+                    // 입력 필드 초기화
+                    ClearGateInputs();
+                    _selectedGateIndex = -1;
+
+                    System.Windows.MessageBox.Show("게이트가 성공적으로 삭제되었습니다.", "성공", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"게이트 삭제 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// DataGrid 선택 변경 이벤트
+        /// </summary>
+        private void DgGateList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            try
+            {
+                if (dgGateList.SelectedItem is GateDatas selectedGate)
+                {
+                    _selectedGateIndex = dgGateList.SelectedIndex;
+                    
+                    // 선택된 게이트 정보를 입력 필드에 표시
+                    txtIndexStart.Text = selectedGate.Index.ToString();
+                    txtIndexStop.Text = selectedGate.Index.ToString(); // Index Stop은 Index와 동일하게 설정
+                    txtGateStart.Text = selectedGate.GateStart.ToString("F2");
+                    txtGateStop.Text = selectedGate.GateStop.ToString("F2");
+
+                    UpdateGateButtonStates();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"게이트 선택 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        #endregion
+
+        #region Gate Editor Helper Methods
+
+        /// <summary>
+        /// 게이트 입력값 검증
+        /// </summary>
+        private bool ValidateGateInputs()
+        {
+            // Index Start 검증
+            if (!int.TryParse(txtIndexStart.Text, out int indexStart) || indexStart < 0)
+            {
+                System.Windows.MessageBox.Show("Index Start는 0 이상의 정수여야 합니다.", "입력 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+
+            // Index Stop 검증
+            if (!int.TryParse(txtIndexStop.Text, out int indexStop) || indexStop < 0)
+            {
+                System.Windows.MessageBox.Show("Index Stop은 0 이상의 정수여야 합니다.", "입력 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+
+            // Gate Start 검증
+            if (!double.TryParse(txtGateStart.Text, out double gateStart))
+            {
+                System.Windows.MessageBox.Show("Gate Start는 유효한 숫자여야 합니다.", "입력 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+
+            // Gate Stop 검증
+            if (!double.TryParse(txtGateStop.Text, out double gateStop))
+            {
+                System.Windows.MessageBox.Show("Gate Stop은 유효한 숫자여야 합니다.", "입력 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+
+            // Gate Start와 Gate Stop 비교
+            if (gateStart >= gateStop)
+            {
+                System.Windows.MessageBox.Show("Gate Start는 Gate Stop보다 작아야 합니다.", "입력 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// 게이트 입력 필드 초기화
+        /// </summary>
+        private void ClearGateInputs()
+        {
+            txtIndexStart.Text = "0";
+            txtIndexStop.Text = "100";
+            txtGateStart.Text = "0.0";
+            txtGateStop.Text = "1.0";
+        }
+
+        /// <summary>
+        /// 게이트 버튼 상태 업데이트
+        /// </summary>
+        private void UpdateGateButtonStates()
+        {
+            bool hasSelection = _selectedGateIndex >= 0;
+            
+            btnAddGate.IsEnabled = true;
+            btnModifyGate.IsEnabled = hasSelection;
+            btnDeleteGate.IsEnabled = hasSelection;
+        }
+
+        #endregion
     }
 }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.IO;
 using System.Linq;
+using System.Collections.ObjectModel;
 
 namespace SAT_TestProgram.Data
 {
@@ -63,8 +64,28 @@ namespace SAT_TestProgram.Data
         /// </summary>
         public event EventHandler<DataModel> OnCurrentDataChanged;
 
+        /// <summary>
+        /// 게이트 데이터가 변경되었을 때 발생하는 이벤트
+        /// </summary>
+        public event EventHandler<GateDatas> OnGateDataChanged;
+
         private Dictionary<string, AlgorithmDatas> _rawAlgorithmDatas;
         private Dictionary<string, AlgorithmDatas> _voidAlgorithmDatas;
+
+        // 게이트 데이터 관리
+        private ObservableCollection<GateDatas> _gateDatas;
+
+        /// <summary>
+        /// 게이트 데이터 컬렉션
+        /// </summary>
+        public ObservableCollection<GateDatas> GateDatas
+        {
+            get => _gateDatas;
+            private set
+            {
+                _gateDatas = value;
+            }
+        }
 
         /// <summary>
         /// DataManager 생성자 - private으로 선언하여 외부에서 인스턴스 생성을 막음
@@ -74,6 +95,7 @@ namespace SAT_TestProgram.Data
             _dataSet = new List<DataModel>();
             _rawAlgorithmDatas = new Dictionary<string, AlgorithmDatas>();
             _voidAlgorithmDatas = new Dictionary<string, AlgorithmDatas>();
+            _gateDatas = new ObservableCollection<GateDatas>();
         }
 
         /// <summary>
@@ -268,5 +290,81 @@ namespace SAT_TestProgram.Data
             _rawAlgorithmDatas.Clear();
             _voidAlgorithmDatas.Clear();
         }
+
+        #region Gate Data Management
+
+        /// <summary>
+        /// 게이트 데이터 추가
+        /// </summary>
+        /// <param name="gateData">추가할 게이트 데이터</param>
+        public void AddGateData(GateDatas gateData)
+        {
+            if (gateData == null) return;
+
+            _gateDatas.Add(gateData);
+            OnGateDataChanged?.Invoke(this, gateData);
+        }
+
+        /// <summary>
+        /// 게이트 데이터 수정
+        /// </summary>
+        /// <param name="index">수정할 게이트의 인덱스</param>
+        /// <param name="gateData">수정된 게이트 데이터</param>
+        public void UpdateGateData(int index, GateDatas gateData)
+        {
+            if (gateData == null || index < 0 || index >= _gateDatas.Count) return;
+
+            _gateDatas[index] = gateData;
+            OnGateDataChanged?.Invoke(this, gateData);
+        }
+
+        /// <summary>
+        /// 게이트 데이터 삭제
+        /// </summary>
+        /// <param name="index">삭제할 게이트의 인덱스</param>
+        public void RemoveGateData(int index)
+        {
+            if (index < 0 || index >= _gateDatas.Count) return;
+
+            var removedGate = _gateDatas[index];
+            _gateDatas.RemoveAt(index);
+            OnGateDataChanged?.Invoke(this, removedGate);
+        }
+
+        /// <summary>
+        /// 게이트 데이터 가져오기
+        /// </summary>
+        /// <param name="index">가져올 게이트의 인덱스</param>
+        /// <returns>게이트 데이터</returns>
+        public GateDatas GetGateData(int index)
+        {
+            if (index < 0 || index >= _gateDatas.Count) return null;
+            return _gateDatas[index];
+        }
+
+        /// <summary>
+        /// 모든 게이트 데이터 가져오기
+        /// </summary>
+        /// <returns>게이트 데이터 리스트</returns>
+        public List<GateDatas> GetAllGateDatas()
+        {
+            return _gateDatas.ToList();
+        }
+
+        /// <summary>
+        /// 게이트 데이터 초기화
+        /// </summary>
+        public void ClearGateDatas()
+        {
+            _gateDatas.Clear();
+            OnGateDataChanged?.Invoke(this, null);
+        }
+
+        /// <summary>
+        /// 게이트 데이터 개수
+        /// </summary>
+        public int GateDataCount => _gateDatas.Count;
+
+        #endregion
     }
 } 

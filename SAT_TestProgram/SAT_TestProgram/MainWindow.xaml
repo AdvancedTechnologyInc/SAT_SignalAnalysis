@@ -293,7 +293,80 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-               
+                <!-- Gate Editor Section -->
+                <GroupBox Header="Gate Editor" 
+                         Grid.Row="0" 
+                         Margin="5">
+                    <StackPanel>
+                        <!-- Gate Input Controls -->
+                        <GroupBox Header="Gate Input" Margin="0,5">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Index Start -->
+                                <TextBlock Text="Index Start:" Grid.Row="0" Grid.Column="0" 
+                                         VerticalAlignment="Center" Margin="5,2"/>
+                                <TextBox x:Name="txtIndexStart" Grid.Row="0" Grid.Column="1" 
+                                       Margin="5,2" Text="0"/>
+
+                                <!-- Index Stop -->
+                                <TextBlock Text="Index Stop:" Grid.Row="1" Grid.Column="0" 
+                                         VerticalAlignment="Center" Margin="5,2"/>
+                                <TextBox x:Name="txtIndexStop" Grid.Row="1" Grid.Column="1" 
+                                       Margin="5,2" Text="100"/>
+
+                                <!-- Gate Start -->
+                                <TextBlock Text="Gate Start:" Grid.Row="2" Grid.Column="0" 
+                                         VerticalAlignment="Center" Margin="5,2"/>
+                                <TextBox x:Name="txtGateStart" Grid.Row="2" Grid.Column="1" 
+                                       Margin="5,2" Text="0.0"/>
+
+                                <!-- Gate Stop -->
+                                <TextBlock Text="Gate Stop:" Grid.Row="3" Grid.Column="0" 
+                                         VerticalAlignment="Center" Margin="5,2"/>
+                                <TextBox x:Name="txtGateStop" Grid.Row="3" Grid.Column="1" 
+                                       Margin="5,2" Text="1.0"/>
+                            </Grid>
+                        </GroupBox>
+
+                        <!-- Gate Control Buttons -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,5">
+                            <Button x:Name="btnAddGate" Content="Add" Width="60" Margin="5,0" Click="BtnAddGate_Click"/>
+                            <Button x:Name="btnModifyGate" Content="Modify" Width="60" Margin="5,0" Click="BtnModifyGate_Click"/>
+                            <Button x:Name="btnDeleteGate" Content="Delete" Width="60" Margin="5,0" Click="BtnDeleteGate_Click"/>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- Gate Data Grid -->
+                <GroupBox Header="Gate List" 
+                         Grid.Row="1" 
+                         Margin="5">
+                    <DataGrid x:Name="dgGateList" 
+                             AutoGenerateColumns="False" 
+                             CanUserAddRows="False"
+                             SelectionMode="Single"
+                             SelectionChanged="DgGateList_SelectionChanged"
+                             Height="150">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Index" Binding="{Binding Index}" Width="60"/>
+                            <DataGridTextColumn Header="Gate Start" Binding="{Binding GateStart, StringFormat=N2}" Width="80"/>
+                            <DataGridTextColumn Header="Gate Stop" Binding="{Binding GateStop, StringFormat=N2}" Width="80"/>
+                            <DataGridTextColumn Header="Distance" Binding="{Binding Distance, StringFormat=N2}" Width="80"/>
+                            <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="100"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </GroupBox>
+
                 <!-- Scale Controls -->
                 <GroupBox Header="Scale Controls" 
                          Grid.Row="2" 
@@ -408,120 +481,6 @@
                         </StackPanel>
                     </StackPanel>
                 </GroupBox>
-                <!-- Scale Controls --><!--
-                <GroupBox Header="Scale Controls" 
-                         Grid.Row="2" 
-                         Margin="5">
-                    <StackPanel>
-                        --><!-- X Scale Control --><!--
-                        <GroupBox Header="X Scale" Margin="0,5">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                
-                                --><!-- Range Labels --><!--
-                                <TextBlock Text="{Binding ElementName=rangeSliderX, Path=LowerValue, StringFormat={}{0:F0} ns}"
-                                         Grid.Row="0" Grid.Column="0"
-                                         Width="80"
-                                         TextAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="5,0"/>
-                                         
-                                <TextBlock Text="{Binding ElementName=rangeSliderX, Path=HigherValue, StringFormat={}{0:F0} ns}"
-                                         Grid.Row="0" Grid.Column="2"
-                                         Width="80"
-                                         TextAlignment="Right"
-                                         VerticalAlignment="Center"
-                                         Margin="5,0"/>
-                                
-                                --><!-- Range Slider --><!--
-                                <xctk:RangeSlider x:Name="rangeSliderX"
-                                        Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
-                                        Minimum="0" 
-                                        Maximum="100"
-                                        LowerValue="0"
-                                        HigherValue="100"
-                                        Margin="5"
-                                        PreviewMouseMove="RangeSlider_PreviewMouseMove"/>
-                            </Grid>
-                        </GroupBox>
-
-                        --><!-- Y Scale Control --><!--
-                        <GroupBox Header="Y Scale" Margin="0,5">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                
-                                --><!-- Range Labels --><!--
-                                <TextBlock Text="{Binding ElementName=rangeSliderY, Path=LowerValue, StringFormat=N2}"
-                                         Grid.Row="0" Grid.Column="0"
-                                         Width="40"
-                                         TextAlignment="Left"
-                                         VerticalAlignment="Center"
-                                         Margin="5,0"/>
-                                         
-                                <TextBlock Text="{Binding ElementName=rangeSliderY, Path=HigherValue, StringFormat=N2}"
-                                         Grid.Row="0" Grid.Column="2"
-                                         Width="40"
-                                         TextAlignment="Right"
-                                         VerticalAlignment="Center"
-                                         Margin="5,0"/>
-                                
-                                --><!-- Range Slider --><!--
-                                <xctk:RangeSlider x:Name="rangeSliderY"
-                                        Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
-                                        Minimum="-10" 
-                                        Maximum="10"
-                                        LowerValue="-5"
-                                        HigherValue="5"
-                                        Margin="5"
-                                        PreviewMouseMove="RangeSlider_PreviewMouseMove"/>
-                            </Grid>
-                        </GroupBox>
-
-                        --><!-- Preview Area --><!--
-                        <GroupBox Header="Preview" Margin="0,5">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="*"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-                                
-                                --><!-- Preview Legend --><!--
-                                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="5">
-                                    <Rectangle Width="16" Height="12" Fill="#80FF0000" Margin="0,0,5,0"/>
-                                    <TextBlock Text="Selected Range" VerticalAlignment="Center"/>
-                                </StackPanel>
-
-                                --><!-- Preview Plot --><!--
-                                <Border Grid.Row="1" Height="100" Margin="5">
-                                    <ScottPlot:WpfPlot x:Name="plotPreview" 
-                                                      x:FieldModifier="public"/>
-                                </Border>
-                            </Grid>
-                        </GroupBox>
-
-                        --><!-- Control Buttons --><!--
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5">
-                            <Button Content="Apply" Width="80" Margin="5,0" Click="ApplyScale_Click"/>
-                            <Button Content="Reset Scale" Width="80" Margin="5,0" Click="ResetScale_Click"/>
-                        </StackPanel>
-                    </StackPanel>
-                </GroupBox>-->
             </Grid>
         </GroupBox>
     </Grid>
