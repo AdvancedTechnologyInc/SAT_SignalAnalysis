@@ -152,6 +152,17 @@ namespace SAT_TestProgram
                     {
                         _dataManager.CurrentData.FileName = fileName;
                         _rawSignalData = _dataManager.CurrentData;
+                        
+                        // Index Start/Stop 값을 UI에서 읽어서 DataManager에 업데이트
+                        if (int.TryParse(txtIndexStart.Text, out int indexStart))
+                        {
+                            _dataManager.IndexStart = indexStart;
+                        }
+                        if (int.TryParse(txtIndexStop.Text, out int indexStop))
+                        {
+                            _dataManager.IndexStop = indexStop;
+                        }
+                        
                         UpdatePlots(_dataManager.CurrentData);
                         UpdateSliderRanges(_dataManager.CurrentData);
                     }
@@ -190,6 +201,17 @@ namespace SAT_TestProgram
                     {
                         _dataManager.CurrentData.FileName = fileName;
                         _voidSignalData = _dataManager.CurrentData;
+                        
+                        // Index Start/Stop 값을 UI에서 읽어서 DataManager에 업데이트
+                        if (int.TryParse(txtIndexStart.Text, out int indexStart))
+                        {
+                            _dataManager.IndexStart = indexStart;
+                        }
+                        if (int.TryParse(txtIndexStop.Text, out int indexStop))
+                        {
+                            _dataManager.IndexStop = indexStop;
+                        }
+                        
                         UpdatePlots(_dataManager.CurrentData);
                         UpdateSliderRanges(_dataManager.CurrentData);
                     }
@@ -1401,16 +1423,6 @@ namespace SAT_TestProgram
             
             // 게이트 시각화 업데이트
             VisualizeGates();
-            
-            // Index Start/Stop 값이 변경된 경우 그래프 다시 그리기
-            if (_rawSignalData != null)
-            {
-                UpdatePlots(_rawSignalData);
-            }
-            if (_voidSignalData != null)
-            {
-                UpdatePlots(_voidSignalData);
-            }
         }
 
         /// <summary>
@@ -1431,8 +1443,13 @@ namespace SAT_TestProgram
                 if (!ValidateGateInputs()) return;
 
                 // Index Start/Stop을 DataManager에 업데이트
-                _dataManager.IndexStart = int.Parse(txtIndexStart.Text);
-                _dataManager.IndexStop = int.Parse(txtIndexStop.Text);
+                int newIndexStart = int.Parse(txtIndexStart.Text);
+                int newIndexStop = int.Parse(txtIndexStop.Text);
+                
+                bool indexChanged = (_dataManager.IndexStart != newIndexStart || _dataManager.IndexStop != newIndexStop);
+                
+                _dataManager.IndexStart = newIndexStart;
+                _dataManager.IndexStop = newIndexStop;
 
                 // 새로운 게이트 데이터 생성 (Gate Start/Stop만 포함)
                 var gateData = new GateDatas
@@ -1448,8 +1465,23 @@ namespace SAT_TestProgram
                 // 입력 필드 초기화
                 ClearGateInputs();
 
-                // 게이트 시각화 업데이트
-                VisualizeGates();
+                // Index Start/Stop이 변경된 경우 그래프 다시 그리기
+                if (indexChanged)
+                {
+                    if (_rawSignalData != null)
+                    {
+                        UpdatePlots(_rawSignalData);
+                    }
+                    if (_voidSignalData != null)
+                    {
+                        UpdatePlots(_voidSignalData);
+                    }
+                }
+                else
+                {
+                    // 게이트 시각화만 업데이트
+                    VisualizeGates();
+                }
 
                 System.Windows.MessageBox.Show("게이트가 성공적으로 추가되었습니다.", "성공", MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -1483,8 +1515,13 @@ namespace SAT_TestProgram
                 if (!ValidateGateInputs()) return;
 
                 // Index Start/Stop을 DataManager에 업데이트
-                _dataManager.IndexStart = int.Parse(txtIndexStart.Text);
-                _dataManager.IndexStop = int.Parse(txtIndexStop.Text);
+                int newIndexStart = int.Parse(txtIndexStart.Text);
+                int newIndexStop = int.Parse(txtIndexStop.Text);
+                
+                bool indexChanged = (_dataManager.IndexStart != newIndexStart || _dataManager.IndexStop != newIndexStop);
+                
+                _dataManager.IndexStart = newIndexStart;
+                _dataManager.IndexStop = newIndexStop;
 
                 // 게이트 데이터 수정 (Gate Start/Stop만 포함)
                 var gateData = new GateDatas
@@ -1501,8 +1538,23 @@ namespace SAT_TestProgram
                 ClearGateInputs();
                 _selectedGateIndex = -1;
 
-                // 게이트 시각화 업데이트
-                VisualizeGates();
+                // Index Start/Stop이 변경된 경우 그래프 다시 그리기
+                if (indexChanged)
+                {
+                    if (_rawSignalData != null)
+                    {
+                        UpdatePlots(_rawSignalData);
+                    }
+                    if (_voidSignalData != null)
+                    {
+                        UpdatePlots(_voidSignalData);
+                    }
+                }
+                else
+                {
+                    // 게이트 시각화만 업데이트
+                    VisualizeGates();
+                }
 
                 System.Windows.MessageBox.Show("게이트가 성공적으로 수정되었습니다.", "성공", MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -1863,46 +1915,6 @@ namespace SAT_TestProgram
         private void ChkShowGates_Unchecked(object sender, RoutedEventArgs e)
         {
             ClearGateVisualization();
-        }
-
-        #endregion
-
-        #region Index Start/Stop Event Handlers
-
-        /// <summary>
-        /// Index Start 텍스트 변경 이벤트
-        /// </summary>
-        private void TxtIndexStart_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            try
-            {
-                if (_dataManager != null && int.TryParse(txtIndexStart.Text, out int indexStart))
-                {
-                    _dataManager.IndexStart = indexStart;
-                }
-            }
-            catch (Exception ex)
-            {
-                // 에러 메시지는 표시하지 않고 무시 (사용자가 입력 중일 때 발생할 수 있음)
-            }
-        }
-
-        /// <summary>
-        /// Index Stop 텍스트 변경 이벤트
-        /// </summary>
-        private void TxtIndexStop_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            try
-            {
-                if (_dataManager != null && int.TryParse(txtIndexStop.Text, out int indexStop))
-                {
-                    _dataManager.IndexStop = indexStop;
-                }
-            }
-            catch (Exception ex)
-            {
-                // 에러 메시지는 표시하지 않고 무시 (사용자가 입력 중일 때 발생할 수 있음)
-            }
         }
 
         #endregion

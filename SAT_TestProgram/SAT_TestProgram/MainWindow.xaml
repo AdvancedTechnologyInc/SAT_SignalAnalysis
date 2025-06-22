@@ -316,13 +316,13 @@
                                 <TextBlock Text="Index Start:" Grid.Row="0" Grid.Column="0" 
                                          VerticalAlignment="Center" Margin="5,2"/>
                                 <TextBox x:Name="txtIndexStart" Grid.Row="0" Grid.Column="1" 
-                                       Margin="5,2" Text="0" TextChanged="TxtIndexStart_TextChanged"/>
+                                       Margin="5,2" Text="0"/>
 
                                 <!-- Index Stop -->
                                 <TextBlock Text="Index Stop:" Grid.Row="1" Grid.Column="0" 
                                          VerticalAlignment="Center" Margin="5,2"/>
                                 <TextBox x:Name="txtIndexStop" Grid.Row="1" Grid.Column="1" 
-                                       Margin="5,2" Text="100" TextChanged="TxtIndexStop_TextChanged"/>
+                                       Margin="5,2" Text="100"/>
 
                                 <!-- Gate Start -->
                                 <TextBlock Text="Gate Start:" Grid.Row="2" Grid.Column="0" 
