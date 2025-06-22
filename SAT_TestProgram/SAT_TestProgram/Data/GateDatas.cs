@@ -9,24 +9,10 @@ namespace SAT_TestProgram.Data
     /// </summary>
     public class GateDatas : INotifyPropertyChanged
     {
-        private int _index;
         private double _gateStart;
         private double _gateStop;
         private double _distance;
         private string _name;
-
-        /// <summary>
-        /// 게이트 인덱스
-        /// </summary>
-        public int Index
-        {
-            get => _index;
-            set
-            {
-                _index = value;
-                OnPropertyChanged(nameof(Index));
-            }
-        }
 
         /// <summary>
         /// 게이트 시작 위치
@@ -87,7 +73,6 @@ namespace SAT_TestProgram.Data
         /// </summary>
         public GateDatas()
         {
-            Index = 0;
             GateStart = 0;
             GateStop = 0;
             Distance = 0;
@@ -97,13 +82,11 @@ namespace SAT_TestProgram.Data
         /// <summary>
         /// GateDatas 생성자 (매개변수 포함)
         /// </summary>
-        /// <param name="index">게이트 인덱스</param>
         /// <param name="gateStart">게이트 시작 위치</param>
         /// <param name="gateStop">게이트 끝 위치</param>
         /// <param name="name">게이트 이름</param>
-        public GateDatas(int index, double gateStart, double gateStop, string name = "Gate")
+        public GateDatas(double gateStart, double gateStop, string name = "Gate")
         {
-            Index = index;
             GateStart = gateStart;
             GateStop = gateStop;
             Name = name;
@@ -124,7 +107,7 @@ namespace SAT_TestProgram.Data
         /// <returns>복사된 GateDatas 객체</returns>
         public GateDatas Clone()
         {
-            return new GateDatas(Index, GateStart, GateStop, Name);
+            return new GateDatas(GateStart, GateStop, Name);
         }
 
         /// <summary>

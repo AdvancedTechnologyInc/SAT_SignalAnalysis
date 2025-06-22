@@ -75,6 +75,10 @@ namespace SAT_TestProgram.Data
         // 게이트 데이터 관리
         private ObservableCollection<GateDatas> _gateDatas;
 
+        // Index Start/Stop 관리 (Signal 데이터에 1개만 존재)
+        private int _indexStart = 0;
+        private int _indexStop = 100;
+
         /// <summary>
         /// 게이트 데이터 컬렉션
         /// </summary>
@@ -84,6 +88,32 @@ namespace SAT_TestProgram.Data
             private set
             {
                 _gateDatas = value;
+            }
+        }
+
+        /// <summary>
+        /// Index Start 값
+        /// </summary>
+        public int IndexStart
+        {
+            get => _indexStart;
+            set
+            {
+                _indexStart = value;
+                OnGateDataChanged?.Invoke(this, null);
+            }
+        }
+
+        /// <summary>
+        /// Index Stop 값
+        /// </summary>
+        public int IndexStop
+        {
+            get => _indexStop;
+            set
+            {
+                _indexStop = value;
+                OnGateDataChanged?.Invoke(this, null);
             }
         }
 

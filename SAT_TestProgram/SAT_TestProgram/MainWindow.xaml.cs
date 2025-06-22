@@ -438,6 +438,43 @@ namespace SAT_TestProgram
                     );
                 }
 
+                // Index Start/Stop 구간을 회색으로 표시
+                if (_dataManager != null)
+                {
+                    var axisLimits = plot.GetAxisLimits();
+                    
+                    // Index Start 구간 (0부터 Index Start까지)
+                    if (_dataManager.IndexStart > 0 && _dataManager.IndexStart < data.YData.Length)
+                    {
+                        var indexStartX = new double[] { 0, 0, _dataManager.IndexStart, _dataManager.IndexStart };
+                        var indexStartY = new double[] { axisLimits.YMin, axisLimits.YMax, axisLimits.YMax, axisLimits.YMin };
+                        var indexStartColor = System.Drawing.Color.FromArgb(50, 128, 128, 128); // 반투명 회색
+                        plot.AddPolygon(indexStartX, indexStartY, indexStartColor);
+                        
+                        // Index Start 라벨 추가
+                        var labelX = _dataManager.IndexStart / 2.0;
+                        var labelY = axisLimits.YMax * 0.9;
+                        var indexStartText = plot.AddText("Index Start", labelX, labelY);
+                        indexStartText.Color = System.Drawing.Color.Gray;
+                    }
+                    
+                    // Index Stop 구간 (끝에서 Index Stop만큼 뺀 지점부터 끝까지)
+                    int indexStopStart = data.YData.Length - _dataManager.IndexStop;
+                    if (_dataManager.IndexStop > 0 && indexStopStart > 0 && indexStopStart < data.YData.Length)
+                    {
+                        var indexStopX = new double[] { indexStopStart, indexStopStart, data.YData.Length - 1, data.YData.Length - 1 };
+                        var indexStopY = new double[] { axisLimits.YMin, axisLimits.YMax, axisLimits.YMax, axisLimits.YMin };
+                        var indexStopColor = System.Drawing.Color.FromArgb(50, 128, 128, 128); // 반투명 회색
+                        plot.AddPolygon(indexStopX, indexStopY, indexStopColor);
+                        
+                        // Index Stop 라벨 추가
+                        var labelX = indexStopStart + (data.YData.Length - 1 - indexStopStart) / 2.0;
+                        var labelY = axisLimits.YMax * 0.9;
+                        var indexStopText = plot.AddText("Index Stop", labelX, labelY);
+                        indexStopText.Color = System.Drawing.Color.Gray;
+                    }
+                }
+
                 // Update X-axis label to show it's index based
                 plot.XLabel("Index");
 
@@ -1338,6 +1375,10 @@ namespace SAT_TestProgram
 
                 // Set initial button states
                 UpdateGateButtonStates();
+
+                // Set initial Index Start/Stop values
+                txtIndexStart.Text = _dataManager.IndexStart.ToString();
+                txtIndexStop.Text = _dataManager.IndexStop.ToString();
             }
             catch (Exception ex)
             {
@@ -1360,6 +1401,16 @@ namespace SAT_TestProgram
             
             // 게이트 시각화 업데이트
             VisualizeGates();
+            
+            // Index Start/Stop 값이 변경된 경우 그래프 다시 그리기
+            if (_rawSignalData != null)
+            {
+                UpdatePlots(_rawSignalData);
+            }
+            if (_voidSignalData != null)
+            {
+                UpdatePlots(_voidSignalData);
+            }
         }
 
         /// <summary>
@@ -1372,17 +1423,20 @@ namespace SAT_TestProgram
                 // _dataManager null 체크
                 if (_dataManager == null)
                 {
-                    System.Windows.MessageBox.Show("DataManager가 초기화되지 않았습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                    //System.Windows.MessageBox.Show("DataManager가 초기화되지 않았습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
                 // 입력값 검증
                 if (!ValidateGateInputs()) return;
 
-                // 새로운 게이트 데이터 생성
+                // Index Start/Stop을 DataManager에 업데이트
+                _dataManager.IndexStart = int.Parse(txtIndexStart.Text);
+                _dataManager.IndexStop = int.Parse(txtIndexStop.Text);
+
+                // 새로운 게이트 데이터 생성 (Gate Start/Stop만 포함)
                 var gateData = new GateDatas
                 {
-                    Index = int.Parse(txtIndexStart.Text),
                     GateStart = double.Parse(txtGateStart.Text),
                     GateStop = double.Parse(txtGateStop.Text),
                     Name = $"Gate_{_dataManager.GateDataCount + 1}"
@@ -1428,10 +1482,13 @@ namespace SAT_TestProgram
                 // 입력값 검증
                 if (!ValidateGateInputs()) return;
 
-                // 게이트 데이터 수정
+                // Index Start/Stop을 DataManager에 업데이트
+                _dataManager.IndexStart = int.Parse(txtIndexStart.Text);
+                _dataManager.IndexStop = int.Parse(txtIndexStop.Text);
+
+                // 게이트 데이터 수정 (Gate Start/Stop만 포함)
                 var gateData = new GateDatas
                 {
-                    Index = int.Parse(txtIndexStart.Text),
                     GateStart = double.Parse(txtGateStart.Text),
                     GateStop = double.Parse(txtGateStop.Text),
                     Name = $"Gate_{_selectedGateIndex + 1}"
@@ -1514,9 +1571,11 @@ namespace SAT_TestProgram
                 {
                     _selectedGateIndex = dgGateList.SelectedIndex;
                     
-                    // 선택된 게이트 정보를 입력 필드에 표시
-                    txtIndexStart.Text = selectedGate.Index.ToString();
-                    txtIndexStop.Text = selectedGate.Index.ToString(); // Index Stop은 Index와 동일하게 설정
+                    // Index Start/Stop은 DataManager에서 가져오기
+                    txtIndexStart.Text = _dataManager.IndexStart.ToString();
+                    txtIndexStop.Text = _dataManager.IndexStop.ToString();
+                    
+                    // Gate Start/Stop은 선택된 게이트에서 가져오기
                     txtGateStart.Text = selectedGate.GateStart.ToString("F2");
                     txtGateStop.Text = selectedGate.GateStop.ToString("F2");
 
@@ -1573,6 +1632,24 @@ namespace SAT_TestProgram
                 return false;
             }
 
+            // Index Start 기반 Gate Start 검증
+            if (gateStart < indexStart)
+            {
+                System.Windows.MessageBox.Show($"Gate Start({gateStart})는 Index Start({indexStart})보다 크거나 같아야 합니다.", "입력 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+
+            // Index Stop 기반 Gate Stop 검증
+            if (_dataManager?.CurrentData != null)
+            {
+                int maxValidIndex = _dataManager.CurrentData.YData.Length - indexStop;
+                if (gateStop > maxValidIndex)
+                {
+                    System.Windows.MessageBox.Show($"Gate Stop({gateStop})는 {maxValidIndex}보다 작거나 같아야 합니다. (데이터 길이: {_dataManager.CurrentData.YData.Length}, Index Stop: {indexStop})", "입력 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return false;
+                }
+            }
+
             return true;
         }
 
@@ -1581,8 +1658,16 @@ namespace SAT_TestProgram
         /// </summary>
         private void ClearGateInputs()
         {
-            txtIndexStart.Text = "0";
-            txtIndexStop.Text = "0";
+            if (_dataManager != null)
+            {
+                txtIndexStart.Text = _dataManager.IndexStart.ToString();
+                txtIndexStop.Text = _dataManager.IndexStop.ToString();
+            }
+            else
+            {
+                txtIndexStart.Text = "0";
+                txtIndexStop.Text = "0";
+            }
             txtGateStart.Text = "0.0";
             txtGateStop.Text = "1.0";
         }
@@ -1684,7 +1769,7 @@ namespace SAT_TestProgram
                     color, 
                     2, 
                     ScottPlot.LineStyle.Solid, 
-                    $"Gate {gateData.Index} Start");
+                    $"Gate {i + 1} Start");
                 _gateVisualElements.Add(startLine);
 
                 // 게이트 끝점에 수직선 추가
@@ -1692,7 +1777,7 @@ namespace SAT_TestProgram
                     color, 
                     2, 
                     ScottPlot.LineStyle.Solid, 
-                    $"Gate {gateData.Index} Stop");
+                    $"Gate {i + 1} Stop");
                 _gateVisualElements.Add(stopLine);
 
                 // 게이트 구간에 반투명 영역 추가 (ScottPlot 4.x에서는 다른 방법 사용)
@@ -1708,14 +1793,14 @@ namespace SAT_TestProgram
                 var centerX = gateData.GateStart + (gateData.GateStop - gateData.GateStart) / 2;
                 var textY = axisLimits.YMax * 0.95;
                 var distanceText = plot.AddText(
-                    $"Gate {gateData.Index}: {gateData.Distance:F2}", 
+                    $"Gate {i + 1}: {gateData.Distance:F2}", 
                     centerX, 
                     textY);
                 _gateVisualElements.Add(distanceText);
 
                 // 게이트 번호를 시작점에 표시
                 var gateNumberText = plot.AddText(
-                    $"G{gateData.Index}", 
+                    $"G{i + 1}", 
                     gateData.GateStart, 
                     axisLimits.YMax * 0.85);
                 _gateVisualElements.Add(gateNumberText);
@@ -1778,6 +1863,46 @@ namespace SAT_TestProgram
         private void ChkShowGates_Unchecked(object sender, RoutedEventArgs e)
         {
             ClearGateVisualization();
+        }
+
+        #endregion
+
+        #region Index Start/Stop Event Handlers
+
+        /// <summary>
+        /// Index Start 텍스트 변경 이벤트
+        /// </summary>
+        private void TxtIndexStart_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            try
+            {
+                if (_dataManager != null && int.TryParse(txtIndexStart.Text, out int indexStart))
+                {
+                    _dataManager.IndexStart = indexStart;
+                }
+            }
+            catch (Exception ex)
+            {
+                // 에러 메시지는 표시하지 않고 무시 (사용자가 입력 중일 때 발생할 수 있음)
+            }
+        }
+
+        /// <summary>
+        /// Index Stop 텍스트 변경 이벤트
+        /// </summary>
+        private void TxtIndexStop_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            try
+            {
+                if (_dataManager != null && int.TryParse(txtIndexStop.Text, out int indexStop))
+                {
+                    _dataManager.IndexStop = indexStop;
+                }
+            }
+            catch (Exception ex)
+            {
+                // 에러 메시지는 표시하지 않고 무시 (사용자가 입력 중일 때 발생할 수 있음)
+            }
         }
 
         #endregion

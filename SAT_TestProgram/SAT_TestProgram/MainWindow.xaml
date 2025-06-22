@@ -316,13 +316,13 @@
                                 <TextBlock Text="Index Start:" Grid.Row="0" Grid.Column="0" 
                                          VerticalAlignment="Center" Margin="5,2"/>
                                 <TextBox x:Name="txtIndexStart" Grid.Row="0" Grid.Column="1" 
-                                       Margin="5,2" Text="0"/>
+                                       Margin="5,2" Text="0" TextChanged="TxtIndexStart_TextChanged"/>
 
                                 <!-- Index Stop -->
                                 <TextBlock Text="Index Stop:" Grid.Row="1" Grid.Column="0" 
                                          VerticalAlignment="Center" Margin="5,2"/>
                                 <TextBox x:Name="txtIndexStop" Grid.Row="1" Grid.Column="1" 
-                                       Margin="5,2" Text="100"/>
+                                       Margin="5,2" Text="100" TextChanged="TxtIndexStop_TextChanged"/>
 
                                 <!-- Gate Start -->
                                 <TextBlock Text="Gate Start:" Grid.Row="2" Grid.Column="0" 
@@ -364,7 +364,6 @@
                              SelectionChanged="DgGateList_SelectionChanged"
                              Height="150">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Index" Binding="{Binding Index}" Width="60"/>
                             <DataGridTextColumn Header="Gate Start" Binding="{Binding GateStart, StringFormat=N2}" Width="80"/>
                             <DataGridTextColumn Header="Gate Stop" Binding="{Binding GateStop, StringFormat=N2}" Width="80"/>
                             <DataGridTextColumn Header="Distance" Binding="{Binding Distance, StringFormat=N2}" Width="80"/>
