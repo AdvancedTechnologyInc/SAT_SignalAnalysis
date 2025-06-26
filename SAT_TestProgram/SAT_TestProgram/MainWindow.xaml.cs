@@ -471,6 +471,28 @@ namespace SAT_TestProgram
                 // Index Start/Stop 구간을 회색으로 표시
                 if (_dataManager != null)
                 {
+                    // 기존 회색 영역 제거 (이미 추가된 polygon들을 찾아서 제거)
+                    var existingPlottables = plot.GetPlottables().ToList();
+                    foreach (var plottable in existingPlottables)
+                    {
+                        if (plottable is ScottPlot.Plottable.Polygon polygon)
+                        {
+                            // 회색 영역인지 확인 (색상으로 판단)
+                            if (polygon.Color.R == 128 && polygon.Color.G == 128 && polygon.Color.B == 128)
+                            {
+                                plot.Remove(plottable);
+                            }
+                        }
+                        else if (plottable is ScottPlot.Plottable.Text text)
+                        {
+                            // Index Start/Stop 라벨인지 확인
+                            if (text.Label == "Index Start" || text.Label == "Index Stop")
+                            {
+                                plot.Remove(plottable);
+                            }
+                        }
+                    }
+                    
                     var axisLimits = plot.GetAxisLimits();
                     
                     // Index Start 구간 (0부터 Index Start까지)
@@ -479,13 +501,14 @@ namespace SAT_TestProgram
                         var indexStartX = new double[] { 0, 0, _dataManager.IndexStart, _dataManager.IndexStart };
                         var indexStartY = new double[] { axisLimits.YMin, axisLimits.YMax, axisLimits.YMax, axisLimits.YMin };
                         var indexStartColor = System.Drawing.Color.FromArgb(50, 128, 128, 128); // 반투명 회색
-                        plot.AddPolygon(indexStartX, indexStartY, indexStartColor);
+                        var indexStartPolygon = plot.AddPolygon(indexStartX, indexStartY, indexStartColor);
                         
                         // Index Start 라벨 추가
                         var labelX = _dataManager.IndexStart / 2.0;
                         var labelY = axisLimits.YMax * 0.9;
                         var indexStartText = plot.AddText("Index Start", labelX, labelY);
                         indexStartText.Color = System.Drawing.Color.Gray;
+                        indexStartText.Label = "Index Start"; // 라벨 속성 추가
                     }
                     
                     // Index Stop 구간 (끝에서 Index Stop만큼 뺀 지점부터 끝까지)
@@ -495,13 +518,14 @@ namespace SAT_TestProgram
                         var indexStopX = new double[] { indexStopStart, indexStopStart, data.YData.Length - 1, data.YData.Length - 1 };
                         var indexStopY = new double[] { axisLimits.YMin, axisLimits.YMax, axisLimits.YMax, axisLimits.YMin };
                         var indexStopColor = System.Drawing.Color.FromArgb(50, 128, 128, 128); // 반투명 회색
-                        plot.AddPolygon(indexStopX, indexStopY, indexStopColor);
+                        var indexStopPolygon = plot.AddPolygon(indexStopX, indexStopY, indexStopColor);
                         
                         // Index Stop 라벨 추가
                         var labelX = indexStopStart + (data.YData.Length - 1 - indexStopStart) / 2.0;
                         var labelY = axisLimits.YMax * 0.9;
                         var indexStopText = plot.AddText("Index Stop", labelX, labelY);
                         indexStopText.Color = System.Drawing.Color.Gray;
+                        indexStopText.Label = "Index Stop"; // 라벨 속성 추가
                     }
                 }
 
@@ -1528,17 +1552,10 @@ namespace SAT_TestProgram
                 // 입력 필드 초기화
                 ClearGateInputs();
 
-                // Index Start/Stop이 변경된 경우 그래프 다시 그리기
+                // Index Start/Stop이 변경된 경우 그래프 완전히 다시 그리기
                 if (indexChanged)
                 {
-                    if (_rawSignalData != null)
-                    {
-                        UpdatePlots(_rawSignalData);
-                    }
-                    if (_voidSignalData != null)
-                    {
-                        UpdatePlots(_voidSignalData);
-                    }
+                    RefreshAllPlots();
                 }
                 else
                 {
@@ -1601,17 +1618,10 @@ namespace SAT_TestProgram
                 ClearGateInputs();
                 _selectedGateIndex = -1;
 
-                // Index Start/Stop이 변경된 경우 그래프 다시 그리기
+                // Index Start/Stop이 변경된 경우 그래프 완전히 다시 그리기
                 if (indexChanged)
                 {
-                    if (_rawSignalData != null)
-                    {
-                        UpdatePlots(_rawSignalData);
-                    }
-                    if (_voidSignalData != null)
-                    {
-                        UpdatePlots(_voidSignalData);
-                    }
+                    RefreshAllPlots();
                 }
                 else
                 {
@@ -1716,6 +1726,7 @@ namespace SAT_TestProgram
                 }
 
                 // Index Start/Stop을 DataManager에 업데이트
+                bool indexChanged = (_dataManager.IndexStart != indexStart || _dataManager.IndexStop != indexStop);
                 _dataManager.IndexStart = indexStart;
                 _dataManager.IndexStop = indexStop;
 
@@ -1752,14 +1763,50 @@ namespace SAT_TestProgram
                     _dataManager.AddGateData(gateData);
                 }
 
-                // 게이트 시각화 업데이트
-                VisualizeGates();
+                // Index Start/Stop이 변경된 경우 그래프 완전히 다시 그리기
+                if (indexChanged)
+                {
+                    RefreshAllPlots();
+                }
+                else
+                {
+                    // 게이트 시각화만 업데이트
+                    VisualizeGates();
+                }
 
                 System.Windows.MessageBox.Show($"{gateNum}개의 게이트가 성공적으로 생성되었습니다.", "성공", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 System.Windows.MessageBox.Show($"Interval 게이트 생성 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 모든 그래프를 새로고침하는 메서드
+        /// </summary>
+        private void RefreshAllPlots()
+        {
+            try
+            {
+                // Raw Signal 그래프 업데이트
+                if (_rawSignalData != null)
+                {
+                    UpdatePlots(_rawSignalData);
+                }
+                
+                // Void Signal 그래프 업데이트
+                if (_voidSignalData != null)
+                {
+                    UpdatePlots(_voidSignalData);
+                }
+                
+                // 게이트 시각화 업데이트
+                VisualizeGates();
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"그래프 새로고침 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
