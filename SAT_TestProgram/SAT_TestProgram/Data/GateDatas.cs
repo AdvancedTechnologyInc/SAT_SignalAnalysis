@@ -15,6 +15,11 @@ namespace SAT_TestProgram.Data
         private string _name;
         private int _maxIndexRaw; // Raw Signal에서 게이트 영역 내에서 가장 큰 Voltage를 가진 Index
         private int _maxIndexVoid; // Void Signal에서 게이트 영역 내에서 가장 큰 Voltage를 가진 Index
+        private int _indexDifferenceRaw; // Raw Signal에서 이전 게이트와의 Index 차이
+        private int _indexDifferenceVoid; // Void Signal에서 이전 게이트와의 Index 차이
+        private double _calculatedDistanceRaw; // Raw Signal에서 계산된 거리 (μm)
+        private double _calculatedDistanceVoid; // Void Signal에서 계산된 거리 (μm)
+        private double _soundVelocity; // 개별 게이트의 음속 (m/s)
 
         /// <summary>
         /// 게이트 시작 위치
@@ -104,6 +109,71 @@ namespace SAT_TestProgram.Data
         public int GetMaxIndex(bool isRawSignal)
         {
             return isRawSignal ? MaxIndexRaw : MaxIndexVoid;
+        }
+
+        /// <summary>
+        /// Raw Signal에서 이전 게이트와의 Index 차이
+        /// </summary>
+        public int IndexDifferenceRaw
+        {
+            get => _indexDifferenceRaw;
+            set
+            {
+                _indexDifferenceRaw = value;
+                OnPropertyChanged(nameof(IndexDifferenceRaw));
+            }
+        }
+
+        /// <summary>
+        /// Void Signal에서 이전 게이트와의 Index 차이
+        /// </summary>
+        public int IndexDifferenceVoid
+        {
+            get => _indexDifferenceVoid;
+            set
+            {
+                _indexDifferenceVoid = value;
+                OnPropertyChanged(nameof(IndexDifferenceVoid));
+            }
+        }
+
+        /// <summary>
+        /// Raw Signal에서 계산된 거리 (μm)
+        /// </summary>
+        public double CalculatedDistanceRaw
+        {
+            get => _calculatedDistanceRaw;
+            set
+            {
+                _calculatedDistanceRaw = value;
+                OnPropertyChanged(nameof(CalculatedDistanceRaw));
+            }
+        }
+
+        /// <summary>
+        /// Void Signal에서 계산된 거리 (μm)
+        /// </summary>
+        public double CalculatedDistanceVoid
+        {
+            get => _calculatedDistanceVoid;
+            set
+            {
+                _calculatedDistanceVoid = value;
+                OnPropertyChanged(nameof(CalculatedDistanceVoid));
+            }
+        }
+
+        /// <summary>
+        /// 개별 게이트의 음속 (m/s)
+        /// </summary>
+        public double SoundVelocity
+        {
+            get => _soundVelocity;
+            set
+            {
+                _soundVelocity = value;
+                OnPropertyChanged(nameof(SoundVelocity));
+            }
         }
 
         /// <summary>

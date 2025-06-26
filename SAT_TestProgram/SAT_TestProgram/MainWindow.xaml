@@ -9,7 +9,7 @@
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
         mc:Ignorable="d"
-        Title="SAT Test Program" Height="920" Width="1800">
+        Title="SAT Test Program" Height="1000" Width="1800">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="1*"/>
@@ -340,14 +340,18 @@
                 </Grid.RowDefinitions>
 
                 <!-- Gate Editor Section -->
-                <GroupBox Header="Gate Editor" 
-                         Grid.Row="0" 
-                         Margin="5">
-                    <StackPanel>
+                <GroupBox Header="Gate Editor" Grid.Row="0" Grid.Column="1" Margin="5">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
                         <!-- Gate Input Controls -->
-                        <GroupBox Header="Gate Input" Margin="0,5">
+                        <GroupBox Header="Gate Input" Grid.Row="0" Margin="0,5">
                             <Grid>
                                 <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
@@ -358,41 +362,28 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-
                                 <!-- Index Start -->
-                                <TextBlock Text="Index Start:" Grid.Row="0" Grid.Column="0" 
-                                         VerticalAlignment="Center" Margin="5,2"/>
-                                <TextBox x:Name="txtIndexStart" Grid.Row="0" Grid.Column="1" 
-                                       Margin="5,2" Text="0"/>
-
+                                <TextBlock Text="Index Start:" Grid.Row="0" Grid.Column="0"  VerticalAlignment="Center" Margin="5,2"/>
+                                <TextBox x:Name="txtIndexStart" Grid.Row="0" Grid.Column="1" Margin="5,2" Text="0"/>
                                 <!-- Index Stop -->
-                                <TextBlock Text="Index Stop:" Grid.Row="1" Grid.Column="0" 
-                                         VerticalAlignment="Center" Margin="5,2"/>
-                                <TextBox x:Name="txtIndexStop" Grid.Row="1" Grid.Column="1" 
-                                       Margin="5,2" Text="100"/>
-
+                                <TextBlock Text="Index Stop:" Grid.Row="1" Grid.Column="0"  VerticalAlignment="Center" Margin="5,2"/>
+                                <TextBox x:Name="txtIndexStop" Grid.Row="1" Grid.Column="1" Margin="5,2" Text="100"/>
                                 <!-- Gate Start -->
-                                <TextBlock Text="Gate Start:" Grid.Row="2" Grid.Column="0" 
-                                         VerticalAlignment="Center" Margin="5,2"/>
-                                <TextBox x:Name="txtGateStart" Grid.Row="2" Grid.Column="1" 
-                                       Margin="5,2" Text="0.0"/>
-
+                                <TextBlock Text="Gate Start:" Grid.Row="2" Grid.Column="0"  VerticalAlignment="Center" Margin="5,2"/>
+                                <TextBox x:Name="txtGateStart" Grid.Row="2" Grid.Column="1" Margin="5,2" Text="0.0"/>
                                 <!-- Gate Stop -->
-                                <TextBlock Text="Gate Stop:" Grid.Row="3" Grid.Column="0" 
-                                         VerticalAlignment="Center" Margin="5,2"/>
-                                <TextBox x:Name="txtGateStop" Grid.Row="3" Grid.Column="1" 
-                                       Margin="5,2" Text="1.0"/>
-
+                                <TextBlock Text="Gate Stop:" Grid.Row="3" Grid.Column="0"  VerticalAlignment="Center" Margin="5,2"/>
+                                <TextBox x:Name="txtGateStop" Grid.Row="3" Grid.Column="1" Margin="5,2" Text="1.0"/>
                                 <!-- Gate Num -->
-                                <TextBlock Text="Gate Num:" Grid.Row="4" Grid.Column="0" 
-                                         VerticalAlignment="Center" Margin="5,2"/>
-                                <TextBox x:Name="txtGateNum" Grid.Row="4" Grid.Column="1" 
-                                       Margin="5,2" Text="5"/>
+                                <TextBlock Text="Gate Num:" Grid.Row="4" Grid.Column="0"  VerticalAlignment="Center" Margin="5,2"/>
+                                <TextBox x:Name="txtGateNum" Grid.Row="4" Grid.Column="1" Margin="5,2" Text="5"/>
+                                <!-- Sound Velocity -->
+                                <TextBlock Text="음속 (m/s):" Grid.Row="5" Grid.Column="0"  VerticalAlignment="Center" Margin="5,2"/>
+                                <TextBox x:Name="txtSoundVelocity" Grid.Row="5" Grid.Column="1" Margin="5,2" Text="5900" ToolTip="음속을 m/s 단위로 입력하세요" TextChanged="TxtSoundVelocity_TextChanged"/>
                             </Grid>
                         </GroupBox>
-
                         <!-- Gate Control Buttons -->
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,5">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,5" Grid.Row="1">
                             <Button x:Name="btnAddGate" Content="Add" Width="60" Margin="5,0" Click="BtnAddGate_Click"/>
                             <Button x:Name="btnModifyGate" Content="Modify" Width="60" Margin="5,0" Click="BtnModifyGate_Click"/>
                             <Button x:Name="btnDeleteGate" Content="Delete" Width="60" Margin="5,0" Click="BtnDeleteGate_Click"/>
@@ -400,41 +391,43 @@
                             <Button x:Name="btnSaveGate" Content="Save" Width="60" Margin="5,0" Click="BtnSaveGate_Click"/>
                             <Button x:Name="btnLoadGate" Content="Load" Width="60" Margin="5,0" Click="BtnLoadGate_Click"/>
                         </StackPanel>
-
-                        <!-- Gate Visualization Toggle -->
-                        <CheckBox x:Name="chkShowGates" Content="Show Gates on Graph" 
-                                 IsChecked="True" Margin="5,5" 
-                                 Checked="ChkShowGates_Checked" 
-                                 Unchecked="ChkShowGates_Unchecked"/>
-                        
-                        <!-- MaxIndex Calculation Toggle -->
-                        <CheckBox x:Name="chkUseOriginalDataForMaxIndex" Content="원본 데이터로 MaxIndex 계산" 
-                                 IsChecked="True" Margin="5,5" 
-                                 Checked="ChkUseOriginalDataForMaxIndex_Checked" 
-                                 Unchecked="ChkUseOriginalDataForMaxIndex_Unchecked"
-                                 ToolTip="체크: 원본 신호 데이터 기준, 해제: 마지막 알고리즘 처리 데이터 기준"/>
-                    </StackPanel>
+                        <!-- Gate Visualization Toggle & MaxIndex Toggle -->
+                        <StackPanel Grid.Row="2">
+                            <CheckBox x:Name="chkShowGates" Content="Show Gates on Graph"  IsChecked="True" Margin="5,5" Checked="ChkShowGates_Checked" Unchecked="ChkShowGates_Unchecked"/>
+                            <CheckBox x:Name="chkUseOriginalDataForMaxIndex" Content="원본 데이터로 MaxIndex 계산"  IsChecked="True" Margin="5,5" Checked="ChkUseOriginalDataForMaxIndex_Checked" Unchecked="ChkUseOriginalDataForMaxIndex_Unchecked" ToolTip="체크: 원본 신호 데이터 기준, 해제: 마지막 알고리즘 처리 데이터 기준"/>
+                        </StackPanel>
+                    </Grid>
                 </GroupBox>
 
-                <!-- Gate Data Grid -->
-                <GroupBox Header="Gate List" 
-                         Grid.Row="1" 
-                         Margin="5">
-                    <DataGrid x:Name="dgGateList" 
-                             AutoGenerateColumns="False" 
-                             CanUserAddRows="False"
-                             SelectionMode="Single"
-                             SelectionChanged="DgGateList_SelectionChanged"
-                             Height="150">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="Gate Start" Binding="{Binding GateStart, StringFormat=N2}" Width="80"/>
-                            <DataGridTextColumn Header="Gate Stop" Binding="{Binding GateStop, StringFormat=N2}" Width="80"/>
-                            <DataGridTextColumn Header="Distance" Binding="{Binding Distance, StringFormat=N2}" Width="80"/>
-                            <DataGridTextColumn Header="Raw Max" Binding="{Binding MaxIndexRaw}" Width="70"/>
-                            <DataGridTextColumn Header="Void Max" Binding="{Binding MaxIndexVoid}" Width="70"/>
-                            <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="100"/>
-                        </DataGrid.Columns>
-                    </DataGrid>
+                <!-- Gate List -->
+                <GroupBox Header="Gate List" Grid.Row="1" Margin="0,5">
+                    <StackPanel>
+                        <Button x:Name="btnCalculateDistances" Content="Cal" 
+                              Width="60" Height="25" Margin="5,5" 
+                              HorizontalAlignment="Left"
+                              Click="BtnCalculateDistances_Click"
+                              ToolTip="거리 계산 실행"/>
+                        <DataGrid x:Name="dgGateList" 
+                                 AutoGenerateColumns="False" 
+                                 CanUserAddRows="False"
+                                 SelectionMode="Single"
+                                 SelectionChanged="DgGateList_SelectionChanged"
+                                 Height="150">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Gate Start" Binding="{Binding GateStart, StringFormat=N2}" Width="80"/>
+                                <DataGridTextColumn Header="Gate Stop" Binding="{Binding GateStop, StringFormat=N2}" Width="80"/>
+                                <DataGridTextColumn Header="Distance" Binding="{Binding Distance, StringFormat=N2}" Width="80"/>
+                                <DataGridTextColumn Header="Raw Max" Binding="{Binding MaxIndexRaw}" Width="70"/>
+                                <DataGridTextColumn Header="Void Max" Binding="{Binding MaxIndexVoid}" Width="70"/>
+                                <DataGridTextColumn Header="Raw Diff (ns)" Binding="{Binding IndexDifferenceRaw}" Width="80"/>
+                                <DataGridTextColumn Header="Void Diff (ns)" Binding="{Binding IndexDifferenceVoid}" Width="80"/>
+                                <DataGridTextColumn Header="Sound Vel (m/s)" Binding="{Binding SoundVelocity, StringFormat=N0}" Width="100"/>
+                                <DataGridTextColumn Header="Raw Dist (μm)" Binding="{Binding CalculatedDistanceRaw, StringFormat=N3}" Width="80"/>
+                                <DataGridTextColumn Header="Void Dist (μm)" Binding="{Binding CalculatedDistanceVoid, StringFormat=N3}" Width="80"/>
+                                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="100"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
                 </GroupBox>
 
                 <!-- Scale Controls -->
@@ -545,10 +538,12 @@
                         </GroupBox>
 
                         <!-- Control Buttons -->
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5">
-                            <Button Content="Apply" Width="80" Margin="5,0" Click="ApplyScale_Click"/>
-                            <Button Content="Reset Scale" Width="80" Margin="5,0" Click="ResetScale_Click"/>
-                        </StackPanel>
+                        <GroupBox Header="Scale Actions" Margin="0,5">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="5">
+                                <Button Content="Apply" Width="80" Height="25" Margin="5,0" Click="ApplyScale_Click" ToolTip="현재 스케일을 그래프에 적용"/>
+                                <Button Content="Reset Scale" Width="80" Height="25" Margin="5,0" Click="ResetScale_Click" ToolTip="스케일을 기본값으로 초기화"/>
+                            </StackPanel>
+                        </GroupBox>
                     </StackPanel>
                 </GroupBox>
             </Grid>

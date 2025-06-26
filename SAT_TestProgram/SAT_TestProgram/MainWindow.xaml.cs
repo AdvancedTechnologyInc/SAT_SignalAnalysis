@@ -2712,7 +2712,7 @@ namespace SAT_TestProgram
         /// </summary>
         private void ChkUseOriginalDataForMaxIndex_Checked(object sender, RoutedEventArgs e)
         {
-            UpdateAllGateMaxIndices();
+            UpdateAllGateMaxIndicesAndDistances();
         }
 
         /// <summary>
@@ -2720,7 +2720,141 @@ namespace SAT_TestProgram
         /// </summary>
         private void ChkUseOriginalDataForMaxIndex_Unchecked(object sender, RoutedEventArgs e)
         {
+            UpdateAllGateMaxIndicesAndDistances();
+        }
+
+        #endregion
+
+        #region Sound Velocity Input
+
+        /// <summary>
+        /// 음속 입력 필드 변경 이벤트
+        /// </summary>
+        private void TxtSoundVelocity_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            UpdateAllGateDistances();
+        }
+
+        #endregion
+
+        #region MaxIndex Calculation Toggle
+
+        /// <summary>
+        /// 원본 데이터로 MaxIndex 계산 체크박스 체크 이벤트
+        /// </summary>
+        //private void ChkUseOriginalDataForMaxIndex_Checked(object sender, RoutedEventArgs e)
+        //{
+        //    UpdateAllGateMaxIndicesAndDistances();
+        //}
+
+        ///// <summary>
+        ///// 원본 데이터로 MaxIndex 계산 체크박스 언체크 이벤트
+        ///// </summary>
+        //private void ChkUseOriginalDataForMaxIndex_Unchecked(object sender, RoutedEventArgs e)
+        //{
+        //    UpdateAllGateMaxIndicesAndDistances();
+        //}
+
+        #endregion
+
+        #region Distance Calculation
+
+        /// <summary>
+        /// 모든 게이트의 거리를 계산하고 업데이트
+        /// </summary>
+        private void UpdateAllGateDistances()
+        {
+            try
+            {
+                if (_dataManager == null) return;
+
+                var gateDatas = _dataManager.GetAllGateDatas();
+                if (gateDatas == null || gateDatas.Count == 0) return;
+
+                // 음속 값 가져오기
+                if (!double.TryParse(txtSoundVelocity.Text, out double soundVelocity) || soundVelocity <= 0)
+                {
+                    // 유효하지 않은 음속 값이면 거리 계산하지 않음
+                    return;
+                }
+
+                // 체크박스 상태에 따라 사용할 MaxIndex 결정
+                bool useOriginalData = chkUseOriginalDataForMaxIndex?.IsChecked == true;
+
+                // 각 게이트의 거리 계산
+                for (int i = 0; i < gateDatas.Count; i++)
+                {
+                    var currentGate = gateDatas[i];
+                    
+                    if (i == 0)
+                    {
+                        // 첫 번째 게이트는 이전 게이트가 없으므로 거리 계산 불가
+                        currentGate.IndexDifferenceRaw = 0;
+                        currentGate.IndexDifferenceVoid = 0;
+                        currentGate.CalculatedDistanceRaw = 0;
+                        currentGate.CalculatedDistanceVoid = 0;
+                    }
+                    else
+                    {
+                        var previousGate = gateDatas[i - 1];
+                        
+                        // Raw Signal 거리 계산
+                        if (currentGate.MaxIndexRaw >= 0 && previousGate.MaxIndexRaw >= 0)
+                        {
+                            int indexDifferenceRaw = Math.Abs(currentGate.MaxIndexRaw - previousGate.MaxIndexRaw);
+                            currentGate.IndexDifferenceRaw = indexDifferenceRaw;
+                            // 거리 계산: index 차이(ns) * 음속(m/s) * 1000 / 2 = 거리(μm)
+                            double calculatedDistanceRaw = indexDifferenceRaw * soundVelocity * 1000.0 / 2.0;
+                            currentGate.CalculatedDistanceRaw = calculatedDistanceRaw;
+                        }
+                        else
+                        {
+                            currentGate.IndexDifferenceRaw = 0;
+                            currentGate.CalculatedDistanceRaw = 0;
+                        }
+                        
+                        // Void Signal 거리 계산
+                        if (currentGate.MaxIndexVoid >= 0 && previousGate.MaxIndexVoid >= 0)
+                        {
+                            int indexDifferenceVoid = Math.Abs(currentGate.MaxIndexVoid - previousGate.MaxIndexVoid);
+                            currentGate.IndexDifferenceVoid = indexDifferenceVoid;
+                            // 거리 계산: index 차이(ns) * 음속(m/s) * 1000 / 2 = 거리(μm)
+                            double calculatedDistanceVoid = indexDifferenceVoid * soundVelocity * 1000.0 / 2.0;
+                            currentGate.CalculatedDistanceVoid = calculatedDistanceVoid;
+                        }
+                        else
+                        {
+                            currentGate.IndexDifferenceVoid = 0;
+                            currentGate.CalculatedDistanceVoid = 0;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"거리 계산 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// MaxIndex 업데이트 후 거리도 함께 업데이트
+        /// </summary>
+        private void UpdateAllGateMaxIndicesAndDistances()
+        {
             UpdateAllGateMaxIndices();
+            UpdateAllGateDistances();
+        }
+
+        #endregion
+
+        #region Distance Calculation
+
+        /// <summary>
+        /// Cal 버튼 클릭 이벤트 - 거리 계산 실행
+        /// </summary>
+        private void BtnCalculateDistances_Click(object sender, RoutedEventArgs e)
+        {
+            UpdateAllGateDistances();
         }
 
         #endregion
