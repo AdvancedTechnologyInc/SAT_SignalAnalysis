@@ -50,6 +50,16 @@ namespace SAT_TestProgram.Data
         public DataModel CurrentData { get; private set; }
 
         /// <summary>
+        /// Raw Signal 데이터
+        /// </summary>
+        public DataModel RawSignalData { get; private set; }
+
+        /// <summary>
+        /// Void Signal 데이터
+        /// </summary>
+        public DataModel VoidSignalData { get; private set; }
+
+        /// <summary>
         /// 데이터가 로드되었을 때 발생하는 이벤트
         /// </summary>
         public event EventHandler<DataModel> OnDataLoaded;
@@ -72,10 +82,10 @@ namespace SAT_TestProgram.Data
         private Dictionary<string, AlgorithmDatas> _rawAlgorithmDatas;
         private Dictionary<string, AlgorithmDatas> _voidAlgorithmDatas;
 
-        // 게이트 데이터 관리
+        // 게이트 데이터 관리 (공유)
         private ObservableCollection<GateDatas> _gateDatas;
 
-        // Index Start/Stop 관리 (Signal 데이터에 1개만 존재)
+        // Index Start/Stop 관리 (공유)
         private int _indexStart = 0;
         private int _indexStop = 100;
 
@@ -274,6 +284,68 @@ namespace SAT_TestProgram.Data
         {
             CurrentData = data;
             OnCurrentDataChanged?.Invoke(this, data);
+        }
+
+        /// <summary>
+        /// Raw Signal 데이터를 설정
+        /// </summary>
+        /// <param name="data">Raw Signal 데이터</param>
+        public void SetRawSignalData(DataModel data)
+        {
+            RawSignalData = data;
+            if (data != null)
+            {
+                CurrentData = data; // Raw Signal이 로드되면 현재 데이터로 설정
+                OnDataLoaded?.Invoke(this, data);
+            }
+        }
+
+        /// <summary>
+        /// Void Signal 데이터를 설정
+        /// </summary>
+        /// <param name="data">Void Signal 데이터</param>
+        public void SetVoidSignalData(DataModel data)
+        {
+            VoidSignalData = data;
+            if (data != null)
+            {
+                CurrentData = data; // Void Signal이 로드되면 현재 데이터로 설정
+                OnDataLoaded?.Invoke(this, data);
+            }
+        }
+
+        /// <summary>
+        /// Raw Signal 데이터를 클리어
+        /// </summary>
+        public void ClearRawSignalData()
+        {
+            RawSignalData = null;
+            // Raw Signal이 클리어되면 Void Signal을 현재 데이터로 설정
+            if (VoidSignalData != null)
+            {
+                CurrentData = VoidSignalData;
+            }
+            else
+            {
+                CurrentData = null;
+            }
+        }
+
+        /// <summary>
+        /// Void Signal 데이터를 클리어
+        /// </summary>
+        public void ClearVoidSignalData()
+        {
+            VoidSignalData = null;
+            // Void Signal이 클리어되면 Raw Signal을 현재 데이터로 설정
+            if (RawSignalData != null)
+            {
+                CurrentData = RawSignalData;
+            }
+            else
+            {
+                CurrentData = null;
+            }
         }
 
         /// <summary>

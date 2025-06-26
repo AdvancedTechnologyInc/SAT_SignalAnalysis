@@ -161,6 +161,9 @@ namespace SAT_TestProgram
                         _dataManager.CurrentData.FileName = fileName;
                         _rawSignalData = _dataManager.CurrentData;
                         
+                        // DataManager에 Raw Signal 데이터 설정
+                        _dataManager.SetRawSignalData(_rawSignalData);
+                        
                         // Index Start/Stop 값을 UI에서 읽어서 DataManager에 업데이트
                         if (int.TryParse(txtIndexStart.Text, out int indexStart))
                         {
@@ -171,8 +174,11 @@ namespace SAT_TestProgram
                             _dataManager.IndexStop = indexStop;
                         }
                         
-                        UpdatePlots(_dataManager.CurrentData);
-                        UpdateSliderRanges(_dataManager.CurrentData);
+                        UpdatePlots(_rawSignalData);
+                        UpdateSliderRanges(_rawSignalData);
+                        
+                        // MaxIndex 업데이트
+                        UpdateAllGateMaxIndices();
                     }
                 }
                 catch (Exception ex)
@@ -210,6 +216,9 @@ namespace SAT_TestProgram
                         _dataManager.CurrentData.FileName = fileName;
                         _voidSignalData = _dataManager.CurrentData;
                         
+                        // DataManager에 Void Signal 데이터 설정
+                        _dataManager.SetVoidSignalData(_voidSignalData);
+                        
                         // Index Start/Stop 값을 UI에서 읽어서 DataManager에 업데이트
                         if (int.TryParse(txtIndexStart.Text, out int indexStart))
                         {
@@ -220,8 +229,11 @@ namespace SAT_TestProgram
                             _dataManager.IndexStop = indexStop;
                         }
                         
-                        UpdatePlots(_dataManager.CurrentData);
-                        UpdateSliderRanges(_dataManager.CurrentData);
+                        UpdatePlots(_voidSignalData);
+                        UpdateSliderRanges(_voidSignalData);
+                        
+                        // MaxIndex 업데이트
+                        UpdateAllGateMaxIndices();
                     }
                 }
                 catch (Exception ex)
@@ -238,19 +250,27 @@ namespace SAT_TestProgram
         private void BtnClearRawData_Click(object sender, RoutedEventArgs e)
         {
             _rawSignalData = null;
+            _dataManager.ClearRawSignalData();
             _dataManager.ClearAlgorithmDatas(true);  // Clear raw data algorithms
             plotUpper.Plot.Clear();
             plotUpper.Refresh();
             UpdatePreviewPlot();
+            
+            // MaxIndex 업데이트
+            UpdateAllGateMaxIndices();
         }
 
         private void BtnClearVoidData_Click(object sender, RoutedEventArgs e)
         {
             _voidSignalData = null;
+            _dataManager.ClearVoidSignalData();
             _dataManager.ClearAlgorithmDatas(false);  // Clear void data algorithms
             plotLower.Plot.Clear();
             plotLower.Refresh();
             UpdatePreviewPlot();
+            
+            // MaxIndex 업데이트
+            UpdateAllGateMaxIndices();
         }
 
         private void Algorithm_Click(object sender, RoutedEventArgs e)
@@ -415,6 +435,9 @@ namespace SAT_TestProgram
 
                 // 게이트 시각화 업데이트
                 VisualizeGates();
+
+                // MaxIndex 업데이트
+                UpdateAllGateMaxIndices();
             }
             catch (Exception ex)
             {
@@ -590,6 +613,9 @@ namespace SAT_TestProgram
 
                 // 게이트 시각화 업데이트
                 VisualizeGates();
+
+                // MaxIndex 업데이트
+                UpdateAllGateMaxIndices();
             }
             catch (Exception ex)
             {
@@ -1564,6 +1590,9 @@ namespace SAT_TestProgram
                 // DataManager에 추가
                 _dataManager.AddGateData(gateData);
 
+                // MaxIndex 계산
+                UpdateAllGateMaxIndices();
+
                 // 입력 필드 초기화
                 ClearGateInputs();
 
@@ -1628,6 +1657,9 @@ namespace SAT_TestProgram
 
                 // DataManager에서 수정
                 _dataManager.UpdateGateData(_selectedGateIndex, gateData);
+
+                // MaxIndex 계산
+                UpdateAllGateMaxIndices();
 
                 // 입력 필드 초기화
                 ClearGateInputs();
@@ -1777,6 +1809,9 @@ namespace SAT_TestProgram
 
                     _dataManager.AddGateData(gateData);
                 }
+
+                // MaxIndex 계산
+                UpdateAllGateMaxIndices();
 
                 // Index Start/Stop이 변경된 경우 그래프 완전히 다시 그리기
                 if (indexChanged)
@@ -2025,10 +2060,16 @@ namespace SAT_TestProgram
                 System.Drawing.Color.Cyan
             };
 
+            // 신호 종류 구분
+            bool isRawSignal = legendLabel?.Contains("Raw") ?? false;
+
             for (int i = 0; i < gateDatas.Count; i++)
             {
                 var gateData = gateDatas[i];
                 var color = colors[i % colors.Length];
+
+                // axisLimits를 먼저 가져오기 (중복 선언 방지)
+                var axisLimits = plot.GetAxisLimits();
 
                 // 게이트 시작점에 수직선 추가 (범례에 표시하지 않음)
                 var startLine = plot.AddVerticalLine(gateData.GateStart, 
@@ -2046,8 +2087,35 @@ namespace SAT_TestProgram
                     null); // 범례에 표시하지 않음
                 _gateVisualElements.Add(stopLine);
 
+                // MaxIndex 위치에 수직선과 동그라미 표시 (범례에 표시하지 않음)
+                int maxIndex = gateData.GetMaxIndex(isRawSignal);
+                if (maxIndex >= 0)
+                {
+                    // MaxIndex 수직선 (점선으로 표시)
+                    var maxLine = plot.AddVerticalLine(maxIndex, 
+                        color, 
+                        2, 
+                        ScottPlot.LineStyle.Dash, 
+                        null); // 범례에 표시하지 않음
+                    _gateVisualElements.Add(maxLine);
+
+                    // MaxIndex 위치에 동그라미 표시
+                    var maxValue = GetValueAtIndex(maxIndex, plot);
+                    if (maxValue.HasValue)
+                    {
+                        var maxPoint = plot.AddPoint(maxIndex, maxValue.Value, color, 8);
+                        _gateVisualElements.Add(maxPoint);
+                    }
+
+                    // MaxIndex 라벨 표시
+                    var maxLabelX = maxIndex;
+                    var maxLabelY = axisLimits.YMax * 0.75;
+                    var maxLabelText = plot.AddText($"Max({maxIndex})", maxLabelX, maxLabelY);
+                    maxLabelText.Color = color;
+                    _gateVisualElements.Add(maxLabelText);
+                }
+
                 // 게이트 구간에 반투명 영역 추가 (ScottPlot 4.x에서는 다른 방법 사용)
-                var axisLimits = plot.GetAxisLimits();
                 var rectX = new double[] { gateData.GateStart, gateData.GateStart, gateData.GateStop, gateData.GateStop };
                 var rectY = new double[] { axisLimits.YMin, axisLimits.YMax, axisLimits.YMax, axisLimits.YMin };
                 
@@ -2300,7 +2368,10 @@ namespace SAT_TestProgram
                 // 게이트 시각화 업데이트
                 VisualizeGates();
 
-                System.Windows.MessageBox.Show($"게이트 설정이 성공적으로 로드되었습니다.\n파일: {openFileDialog.FileName}\n로드된 게이트 수: {_dataManager.GateDataCount}", 
+                // MaxIndex 업데이트
+                UpdateAllGateMaxIndices();
+
+                System.Windows.MessageBox.Show($"게이트 설정이 성공적으로 로드되었습니다.\n파일: {openFileDialog.FileName}", 
                     "로드 완료", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
@@ -2401,6 +2472,255 @@ namespace SAT_TestProgram
             {
                 System.Windows.MessageBox.Show($"범례 표시 업데이트 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        #endregion
+
+        /// <summary>
+        /// 게이트 영역 내에서 가장 큰 Voltage를 가진 Index를 계산
+        /// </summary>
+        /// <param name="gateData">게이트 데이터</param>
+        /// <param name="signalData">신호 데이터</param>
+        /// <returns>가장 큰 Voltage를 가진 Index</returns>
+        private int CalculateMaxIndexInGate(GateDatas gateData, float[] signalData)
+        {
+            if (signalData == null || signalData.Length == 0) return -1;
+
+            int startIndex = (int)Math.Max(0, Math.Floor(gateData.GateStart));
+            int stopIndex = (int)Math.Min(signalData.Length - 1, Math.Ceiling(gateData.GateStop));
+
+            if (startIndex >= stopIndex || startIndex >= signalData.Length) return -1;
+
+            int maxIndex = startIndex;
+            float maxValue = signalData[startIndex];
+
+            for (int i = startIndex + 1; i <= stopIndex; i++)
+            {
+                if (signalData[i] > maxValue)
+                {
+                    maxValue = signalData[i];
+                    maxIndex = i;
+                }
+            }
+
+            return maxIndex;
+        }
+
+        /// <summary>
+        /// 모든 게이트의 MaxIndex를 계산하고 업데이트
+        /// </summary>
+        private void UpdateAllGateMaxIndices()
+        {
+            try
+            {
+                if (_dataManager == null) return;
+
+                var gateDatas = _dataManager.GetAllGateDatas();
+                if (gateDatas == null || gateDatas.Count == 0) return;
+
+                // 체크박스 상태에 따라 데이터 소스 결정
+                bool useOriginalData = chkUseOriginalDataForMaxIndex?.IsChecked == true;
+
+                // Raw Signal 데이터 가져오기
+                float[] rawSignalData = null;
+                if (useOriginalData)
+                {
+                    // 원본 데이터 사용
+                    if (_dataManager.RawSignalData?.YData != null)
+                    {
+                        rawSignalData = _dataManager.RawSignalData.YData;
+                    }
+                    else if (_rawSignalData?.YData != null)
+                    {
+                        rawSignalData = _rawSignalData.YData;
+                    }
+                }
+                else
+                {
+                    // 마지막 알고리즘 처리된 데이터 사용
+                    var rawAlgorithmDatas = _dataManager.GetAllAlgorithmDatas(true);
+                    if (rawAlgorithmDatas != null && rawAlgorithmDatas.Count > 0)
+                    {
+                        rawSignalData = rawAlgorithmDatas.Last().YData;
+                    }
+                    else
+                    {
+                        // 알고리즘 데이터가 없으면 원본 데이터 사용
+                        if (_dataManager.RawSignalData?.YData != null)
+                        {
+                            rawSignalData = _dataManager.RawSignalData.YData;
+                        }
+                        else if (_rawSignalData?.YData != null)
+                        {
+                            rawSignalData = _rawSignalData.YData;
+                        }
+                    }
+                }
+
+                // Void Signal 데이터 가져오기
+                float[] voidSignalData = null;
+                if (useOriginalData)
+                {
+                    // 원본 데이터 사용
+                    if (_dataManager.VoidSignalData?.YData != null)
+                    {
+                        voidSignalData = _dataManager.VoidSignalData.YData;
+                    }
+                    else if (_voidSignalData?.YData != null)
+                    {
+                        voidSignalData = _voidSignalData.YData;
+                    }
+                }
+                else
+                {
+                    // 마지막 알고리즘 처리된 데이터 사용
+                    var voidAlgorithmDatas = _dataManager.GetAllAlgorithmDatas(false);
+                    if (voidAlgorithmDatas != null && voidAlgorithmDatas.Count > 0)
+                    {
+                        voidSignalData = voidAlgorithmDatas.Last().YData;
+                    }
+                    else
+                    {
+                        // 알고리즘 데이터가 없으면 원본 데이터 사용
+                        if (_dataManager.VoidSignalData?.YData != null)
+                        {
+                            voidSignalData = _dataManager.VoidSignalData.YData;
+                        }
+                        else if (_voidSignalData?.YData != null)
+                        {
+                            voidSignalData = _voidSignalData.YData;
+                        }
+                    }
+                }
+
+                // 각 게이트의 MaxIndex 계산
+                foreach (var gateData in gateDatas)
+                {
+                    // Raw Signal MaxIndex 계산
+                    if (rawSignalData != null)
+                    {
+                        int maxIndexRaw = CalculateMaxIndexInGate(gateData, rawSignalData);
+                        gateData.MaxIndexRaw = maxIndexRaw;
+                    }
+
+                    // Void Signal MaxIndex 계산
+                    if (voidSignalData != null)
+                    {
+                        int maxIndexVoid = CalculateMaxIndexInGate(gateData, voidSignalData);
+                        gateData.MaxIndexVoid = maxIndexVoid;
+                    }
+                }
+
+                // 게이트 시각화 업데이트 (MaxIndex 변경 반영)
+                VisualizeGates();
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"MaxIndex 계산 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 특정 인덱스의 값을 가져오는 헬퍼 메서드
+        /// </summary>
+        /// <param name="index">인덱스</param>
+        /// <param name="plot">플롯</param>
+        /// <returns>해당 인덱스의 값</returns>
+        private double? GetValueAtIndex(int index, ScottPlot.Plot plot)
+        {
+            try
+            {
+                // 체크박스 상태에 따라 데이터 소스 결정
+                bool useOriginalData = chkUseOriginalDataForMaxIndex?.IsChecked == true;
+                float[] signalData = null;
+                
+                if (useOriginalData)
+                {
+                    // 원본 데이터 사용
+                    if (_dataManager.RawSignalData?.YData != null)
+                    {
+                        signalData = _dataManager.RawSignalData.YData;
+                    }
+                    else if (_dataManager.VoidSignalData?.YData != null)
+                    {
+                        signalData = _dataManager.VoidSignalData.YData;
+                    }
+                    else if (_rawSignalData?.YData != null)
+                    {
+                        signalData = _rawSignalData.YData;
+                    }
+                    else if (_voidSignalData?.YData != null)
+                    {
+                        signalData = _voidSignalData.YData;
+                    }
+                }
+                else
+                {
+                    // 마지막 알고리즘 처리된 데이터 사용
+                    var rawAlgorithmDatas = _dataManager.GetAllAlgorithmDatas(true);
+                    if (rawAlgorithmDatas != null && rawAlgorithmDatas.Count > 0)
+                    {
+                        signalData = rawAlgorithmDatas.Last().YData;
+                    }
+                    else
+                    {
+                        var voidAlgorithmDatas = _dataManager.GetAllAlgorithmDatas(false);
+                        if (voidAlgorithmDatas != null && voidAlgorithmDatas.Count > 0)
+                        {
+                            signalData = voidAlgorithmDatas.Last().YData;
+                        }
+                        else
+                        {
+                            // 알고리즘 데이터가 없으면 원본 데이터 사용
+                            if (_dataManager.RawSignalData?.YData != null)
+                            {
+                                signalData = _dataManager.RawSignalData.YData;
+                            }
+                            else if (_dataManager.VoidSignalData?.YData != null)
+                            {
+                                signalData = _dataManager.VoidSignalData.YData;
+                            }
+                            else if (_rawSignalData?.YData != null)
+                            {
+                                signalData = _rawSignalData.YData;
+                            }
+                            else if (_voidSignalData?.YData != null)
+                            {
+                                signalData = _voidSignalData.YData;
+                            }
+                        }
+                    }
+                }
+
+                if (signalData != null && index >= 0 && index < signalData.Length)
+                {
+                    return signalData[index];
+                }
+
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        #region MaxIndex Calculation Toggle
+
+        /// <summary>
+        /// 원본 데이터로 MaxIndex 계산 체크박스 체크 이벤트
+        /// </summary>
+        private void ChkUseOriginalDataForMaxIndex_Checked(object sender, RoutedEventArgs e)
+        {
+            UpdateAllGateMaxIndices();
+        }
+
+        /// <summary>
+        /// 원본 데이터로 MaxIndex 계산 체크박스 언체크 이벤트
+        /// </summary>
+        private void ChkUseOriginalDataForMaxIndex_Unchecked(object sender, RoutedEventArgs e)
+        {
+            UpdateAllGateMaxIndices();
         }
 
         #endregion

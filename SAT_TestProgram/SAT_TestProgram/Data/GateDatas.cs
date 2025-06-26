@@ -13,6 +13,8 @@ namespace SAT_TestProgram.Data
         private double _gateStop;
         private double _distance;
         private string _name;
+        private int _maxIndexRaw; // Raw Signal에서 게이트 영역 내에서 가장 큰 Voltage를 가진 Index
+        private int _maxIndexVoid; // Void Signal에서 게이트 영역 내에서 가장 큰 Voltage를 가진 Index
 
         /// <summary>
         /// 게이트 시작 위치
@@ -66,6 +68,42 @@ namespace SAT_TestProgram.Data
                 _name = value;
                 OnPropertyChanged(nameof(Name));
             }
+        }
+
+        /// <summary>
+        /// Raw Signal에서 게이트 영역 내에서 가장 큰 Voltage를 가진 Index
+        /// </summary>
+        public int MaxIndexRaw
+        {
+            get => _maxIndexRaw;
+            set
+            {
+                _maxIndexRaw = value;
+                OnPropertyChanged(nameof(MaxIndexRaw));
+            }
+        }
+
+        /// <summary>
+        /// Void Signal에서 게이트 영역 내에서 가장 큰 Voltage를 가진 Index
+        /// </summary>
+        public int MaxIndexVoid
+        {
+            get => _maxIndexVoid;
+            set
+            {
+                _maxIndexVoid = value;
+                OnPropertyChanged(nameof(MaxIndexVoid));
+            }
+        }
+
+        /// <summary>
+        /// 현재 활성화된 신호에 따른 MaxIndex (Raw/Void 구분)
+        /// </summary>
+        /// <param name="isRawSignal">Raw Signal인지 여부</param>
+        /// <returns>해당 신호의 MaxIndex</returns>
+        public int GetMaxIndex(bool isRawSignal)
+        {
+            return isRawSignal ? MaxIndexRaw : MaxIndexVoid;
         }
 
         /// <summary>
