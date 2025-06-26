@@ -532,10 +532,25 @@ namespace SAT_TestProgram
                 // Update X-axis label to show it's index based
                 plot.XLabel("Index");
 
-                // Show legend if there are algorithm results
-                if (algorithmDatas.Any())
+                // Show legend if there are algorithm results and legend checkbox is checked
+                bool showLegend = false;
+                if (data == _rawSignalData)
+                {
+                    showLegend = chkShowLegendUpper?.IsChecked == true && algorithmDatas.Any();
+                }
+                else
+                {
+                    showLegend = chkShowLegendLower?.IsChecked == true && algorithmDatas.Any();
+                }
+                
+                if (showLegend)
                 {
                     plot.Legend();
+                }
+                else
+                {
+                    // 범례 숨기기
+                    plot.Legend(false);
                 }
 
                 // Store scatter plot reference
@@ -2015,20 +2030,20 @@ namespace SAT_TestProgram
                 var gateData = gateDatas[i];
                 var color = colors[i % colors.Length];
 
-                // 게이트 시작점에 수직선 추가
+                // 게이트 시작점에 수직선 추가 (범례에 표시하지 않음)
                 var startLine = plot.AddVerticalLine(gateData.GateStart, 
                     color, 
                     2, 
                     ScottPlot.LineStyle.Solid, 
-                    $"Gate {i + 1} Start");
+                    null); // 범례에 표시하지 않음
                 _gateVisualElements.Add(startLine);
 
-                // 게이트 끝점에 수직선 추가
+                // 게이트 끝점에 수직선 추가 (범례에 표시하지 않음)
                 var stopLine = plot.AddVerticalLine(gateData.GateStop, 
                     color, 
                     2, 
                     ScottPlot.LineStyle.Solid, 
-                    $"Gate {i + 1} Stop");
+                    null); // 범례에 표시하지 않음
                 _gateVisualElements.Add(stopLine);
 
                 // 게이트 구간에 반투명 영역 추가 (ScottPlot 4.x에서는 다른 방법 사용)
@@ -2294,6 +2309,101 @@ namespace SAT_TestProgram
                     "오류", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+        #region Legend Display Toggle
+
+        /// <summary>
+        /// Upper Graph 범례 표시 체크박스 체크 이벤트
+        /// </summary>
+        private void ChkShowLegendUpper_Checked(object sender, RoutedEventArgs e)
+        {
+            if (plotUpper?.Plot != null)
+            {
+                UpdateLegendDisplay(true, true);
+            }
+        }
+
+        /// <summary>
+        /// Upper Graph 범례 표시 체크박스 언체크 이벤트
+        /// </summary>
+        private void ChkShowLegendUpper_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (plotUpper?.Plot != null)
+            {
+                UpdateLegendDisplay(true, false);
+            }
+        }
+
+        /// <summary>
+        /// Lower Graph 범례 표시 체크박스 체크 이벤트
+        /// </summary>
+        private void ChkShowLegendLower_Checked(object sender, RoutedEventArgs e)
+        {
+            if (plotLower?.Plot != null)
+            {
+                UpdateLegendDisplay(false, true);
+            }
+        }
+
+        /// <summary>
+        /// Lower Graph 범례 표시 체크박스 언체크 이벤트
+        /// </summary>
+        private void ChkShowLegendLower_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (plotLower?.Plot != null)
+            {
+                UpdateLegendDisplay(false, false);
+            }
+        }
+
+        /// <summary>
+        /// 범례 표시 상태 업데이트
+        /// </summary>
+        /// <param name="isUpperGraph">Upper Graph인지 여부</param>
+        /// <param name="showLegend">범례 표시 여부</param>
+        private void UpdateLegendDisplay(bool isUpperGraph, bool showLegend)
+        {
+            try
+            {
+                // plot이 null인지 확인
+                if (isUpperGraph && plotUpper?.Plot == null)
+                {
+                    return; // plotUpper가 초기화되지 않았으면 무시
+                }
+                
+                if (!isUpperGraph && plotLower?.Plot == null)
+                {
+                    return; // plotLower가 초기화되지 않았으면 무시
+                }
+
+                var plot = isUpperGraph ? plotUpper.Plot : plotLower.Plot;
+                var algorithmDatas = _dataManager.GetAllAlgorithmDatas(isUpperGraph);
+
+                if (algorithmDatas != null && algorithmDatas.Any())
+                {
+                    if (showLegend)
+                    {
+                        plot.Legend();
+                    }
+                    else
+                    {
+                        plot.Legend(false);
+                    }
+
+                    // 그래프 새로고침
+                    if (isUpperGraph)
+                        plotUpper.Refresh();
+                    else
+                        plotLower.Refresh();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"범례 표시 업데이트 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        #endregion
     }
 }
 

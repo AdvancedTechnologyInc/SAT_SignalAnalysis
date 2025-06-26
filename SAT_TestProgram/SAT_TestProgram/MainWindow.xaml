@@ -225,6 +225,13 @@
                                 Margin="5,0,15,0"
                                 IsChecked="False"
                                 VerticalAlignment="Center"/>
+                        <CheckBox x:Name="chkShowLegendUpper"
+                                Content="범례 표시"
+                                Margin="5,0,15,0"
+                                IsChecked="True"
+                                VerticalAlignment="Center"
+                                Checked="ChkShowLegendUpper_Checked"
+                                Unchecked="ChkShowLegendUpper_Unchecked"/>
                     </StackPanel>
 
                     <!-- Upper Graph -->
@@ -274,6 +281,13 @@
                                 Margin="5,0,15,0"
                                 IsChecked="False"
                                 VerticalAlignment="Center"/>
+                        <CheckBox x:Name="chkShowLegendLower"
+                                Content="범례 표시"
+                                Margin="5,0,15,0"
+                                IsChecked="True"
+                                VerticalAlignment="Center"
+                                Checked="ChkShowLegendLower_Checked"
+                                Unchecked="ChkShowLegendLower_Unchecked"/>
                     </StackPanel>
 
                     <!-- Lower Graph -->
