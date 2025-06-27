@@ -1587,11 +1587,20 @@ namespace SAT_TestProgram
                     Name = $"Gate_{_dataManager.GateDataCount + 1}"
                 };
 
+                // 음속 값 설정
+                if (double.TryParse(txtSoundVelocity.Text, out double soundVelocity) && soundVelocity > 0)
+                {
+                    gateData.SoundVelocity = soundVelocity;
+                }
+
                 // DataManager에 추가
                 _dataManager.AddGateData(gateData);
 
                 // MaxIndex 계산
                 UpdateAllGateMaxIndices();
+                
+                // 새로 추가된 게이트와 이후 게이트들의 거리만 계산
+                UpdateGateDistancesFromIndex(_dataManager.GateDataCount - 1);
 
                 // 입력 필드 초기화
                 ClearGateInputs();
@@ -1655,11 +1664,20 @@ namespace SAT_TestProgram
                     Name = $"Gate_{_selectedGateIndex + 1}"
                 };
 
+                // 선택된 게이트의 음속 값 설정
+                if (double.TryParse(txtSoundVelocity.Text, out double soundVelocity) && soundVelocity > 0)
+                {
+                    gateData.SoundVelocity = soundVelocity;
+                }
+
                 // DataManager에서 수정
                 _dataManager.UpdateGateData(_selectedGateIndex, gateData);
 
                 // MaxIndex 계산
                 UpdateAllGateMaxIndices();
+                
+                // 선택된 게이트와 이후 게이트들의 거리만 다시 계산
+                UpdateGateDistancesFromIndex(_selectedGateIndex);
 
                 // 입력 필드 초기화
                 ClearGateInputs();
@@ -1807,11 +1825,20 @@ namespace SAT_TestProgram
                         Name = $"Gate_{i + 1}"
                     };
 
+                    // 음속 값 설정
+                    if (double.TryParse(txtSoundVelocity.Text, out double soundVelocity) && soundVelocity > 0)
+                    {
+                        gateData.SoundVelocity = soundVelocity;
+                    }
+
                     _dataManager.AddGateData(gateData);
                 }
 
                 // MaxIndex 계산
                 UpdateAllGateMaxIndices();
+                
+                // 새로 생성된 게이트들의 거리 계산
+                UpdateAllGateDistances();
 
                 // Index Start/Stop이 변경된 경우 그래프 완전히 다시 그리기
                 if (indexChanged)
@@ -1878,6 +1905,9 @@ namespace SAT_TestProgram
                     // Gate Start/Stop은 선택된 게이트에서 가져오기
                     txtGateStart.Text = selectedGate.GateStart.ToString("F2");
                     txtGateStop.Text = selectedGate.GateStop.ToString("F2");
+                    
+                    // 선택된 게이트의 음속 값을 UI에 표시
+                    txtSoundVelocity.Text = selectedGate.SoundVelocity.ToString("F0");
 
                     UpdateGateButtonStates();
                 }
@@ -2484,12 +2514,22 @@ namespace SAT_TestProgram
         /// <returns>가장 큰 Voltage를 가진 Index</returns>
         private int CalculateMaxIndexInGate(GateDatas gateData, float[] signalData)
         {
-            if (signalData == null || signalData.Length == 0) return -1;
+            if (signalData == null || signalData.Length == 0) 
+            {
+                System.Diagnostics.Debug.WriteLine("CalculateMaxIndexInGate: 신호 데이터가 null이거나 비어있음");
+                return -1;
+            }
 
             int startIndex = (int)Math.Max(0, Math.Floor(gateData.GateStart));
             int stopIndex = (int)Math.Min(signalData.Length - 1, Math.Ceiling(gateData.GateStop));
 
-            if (startIndex >= stopIndex || startIndex >= signalData.Length) return -1;
+            System.Diagnostics.Debug.WriteLine($"CalculateMaxIndexInGate: Gate({gateData.GateStart:F2} ~ {gateData.GateStop:F2}) -> Index({startIndex} ~ {stopIndex})");
+
+            if (startIndex >= stopIndex || startIndex >= signalData.Length) 
+            {
+                System.Diagnostics.Debug.WriteLine($"CalculateMaxIndexInGate: 유효하지 않은 인덱스 범위 - startIndex: {startIndex}, stopIndex: {stopIndex}, signalLength: {signalData.Length}");
+                return -1;
+            }
 
             int maxIndex = startIndex;
             float maxValue = signalData[startIndex];
@@ -2502,6 +2542,8 @@ namespace SAT_TestProgram
                     maxIndex = i;
                 }
             }
+
+            System.Diagnostics.Debug.WriteLine($"CalculateMaxIndexInGate: MaxIndex = {maxIndex}, MaxValue = {maxValue:F6}");
 
             return maxIndex;
         }
@@ -2521,6 +2563,9 @@ namespace SAT_TestProgram
                 // 체크박스 상태에 따라 데이터 소스 결정
                 bool useOriginalData = chkUseOriginalDataForMaxIndex?.IsChecked == true;
 
+                System.Diagnostics.Debug.WriteLine($"=== MaxIndex 계산 시작 ===");
+                System.Diagnostics.Debug.WriteLine($"원본 데이터 사용: {useOriginalData}");
+
                 // Raw Signal 데이터 가져오기
                 float[] rawSignalData = null;
                 if (useOriginalData)
@@ -2529,10 +2574,12 @@ namespace SAT_TestProgram
                     if (_dataManager.RawSignalData?.YData != null)
                     {
                         rawSignalData = _dataManager.RawSignalData.YData;
+                        System.Diagnostics.Debug.WriteLine("Raw Signal: DataManager 원본 데이터 사용");
                     }
                     else if (_rawSignalData?.YData != null)
                     {
                         rawSignalData = _rawSignalData.YData;
+                        System.Diagnostics.Debug.WriteLine("Raw Signal: 로컬 원본 데이터 사용");
                     }
                 }
                 else
@@ -2542,6 +2589,7 @@ namespace SAT_TestProgram
                     if (rawAlgorithmDatas != null && rawAlgorithmDatas.Count > 0)
                     {
                         rawSignalData = rawAlgorithmDatas.Last().YData;
+                        System.Diagnostics.Debug.WriteLine($"Raw Signal: 알고리즘 데이터 사용 ({rawAlgorithmDatas.Last().Name})");
                     }
                     else
                     {
@@ -2549,10 +2597,12 @@ namespace SAT_TestProgram
                         if (_dataManager.RawSignalData?.YData != null)
                         {
                             rawSignalData = _dataManager.RawSignalData.YData;
+                            System.Diagnostics.Debug.WriteLine("Raw Signal: 알고리즘 데이터 없음, DataManager 원본 데이터 사용");
                         }
                         else if (_rawSignalData?.YData != null)
                         {
                             rawSignalData = _rawSignalData.YData;
+                            System.Diagnostics.Debug.WriteLine("Raw Signal: 알고리즘 데이터 없음, 로컬 원본 데이터 사용");
                         }
                     }
                 }
@@ -2565,10 +2615,12 @@ namespace SAT_TestProgram
                     if (_dataManager.VoidSignalData?.YData != null)
                     {
                         voidSignalData = _dataManager.VoidSignalData.YData;
+                        System.Diagnostics.Debug.WriteLine("Void Signal: DataManager 원본 데이터 사용");
                     }
                     else if (_voidSignalData?.YData != null)
                     {
                         voidSignalData = _voidSignalData.YData;
+                        System.Diagnostics.Debug.WriteLine("Void Signal: 로컬 원본 데이터 사용");
                     }
                 }
                 else
@@ -2578,6 +2630,7 @@ namespace SAT_TestProgram
                     if (voidAlgorithmDatas != null && voidAlgorithmDatas.Count > 0)
                     {
                         voidSignalData = voidAlgorithmDatas.Last().YData;
+                        System.Diagnostics.Debug.WriteLine($"Void Signal: 알고리즘 데이터 사용 ({voidAlgorithmDatas.Last().Name})");
                     }
                     else
                     {
@@ -2585,22 +2638,34 @@ namespace SAT_TestProgram
                         if (_dataManager.VoidSignalData?.YData != null)
                         {
                             voidSignalData = _dataManager.VoidSignalData.YData;
+                            System.Diagnostics.Debug.WriteLine("Void Signal: 알고리즘 데이터 없음, DataManager 원본 데이터 사용");
                         }
                         else if (_voidSignalData?.YData != null)
                         {
                             voidSignalData = _voidSignalData.YData;
+                            System.Diagnostics.Debug.WriteLine("Void Signal: 알고리즘 데이터 없음, 로컬 원본 데이터 사용");
                         }
                     }
                 }
 
+                System.Diagnostics.Debug.WriteLine($"Raw Signal 데이터 길이: {rawSignalData?.Length ?? 0}");
+                System.Diagnostics.Debug.WriteLine($"Void Signal 데이터 길이: {voidSignalData?.Length ?? 0}");
+
                 // 각 게이트의 MaxIndex 계산
                 foreach (var gateData in gateDatas)
                 {
+                    System.Diagnostics.Debug.WriteLine($"\n--- Gate: {gateData.Name} ({gateData.GateStart:F2} ~ {gateData.GateStop:F2}) ---");
+                    
                     // Raw Signal MaxIndex 계산
                     if (rawSignalData != null)
                     {
                         int maxIndexRaw = CalculateMaxIndexInGate(gateData, rawSignalData);
                         gateData.MaxIndexRaw = maxIndexRaw;
+                        System.Diagnostics.Debug.WriteLine($"Raw MaxIndex: {maxIndexRaw}");
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine("Raw Signal 데이터 없음");
                     }
 
                     // Void Signal MaxIndex 계산
@@ -2608,8 +2673,15 @@ namespace SAT_TestProgram
                     {
                         int maxIndexVoid = CalculateMaxIndexInGate(gateData, voidSignalData);
                         gateData.MaxIndexVoid = maxIndexVoid;
+                        System.Diagnostics.Debug.WriteLine($"Void MaxIndex: {maxIndexVoid}");
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine("Void Signal 데이터 없음");
                     }
                 }
+
+                System.Diagnostics.Debug.WriteLine("=== MaxIndex 계산 완료 ===");
 
                 // 게이트 시각화 업데이트 (MaxIndex 변경 반영)
                 VisualizeGates();
@@ -2732,7 +2804,52 @@ namespace SAT_TestProgram
         /// </summary>
         private void TxtSoundVelocity_TextChanged(object sender, TextChangedEventArgs e)
         {
-            UpdateAllGateDistances();
+            // 실시간 거리 계산 제거 - 각 게이트마다 다른 음속을 적용할 수 있도록 함
+            // UpdateAllGateDistances();
+        }
+
+        /// <summary>
+        /// DataGrid에서 음속 값 편집 완료 이벤트
+        /// </summary>
+        private void SoundVelocityTextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is TextBox textBox && textBox.DataContext is GateDatas gateData)
+                {
+                    // 편집된 음속 값 검증
+                    if (double.TryParse(textBox.Text, out double newSoundVelocity) && newSoundVelocity > 0)
+                    {
+                        // 음속 값이 변경되었는지 확인
+                        if (Math.Abs(gateData.SoundVelocity - newSoundVelocity) > 0.001)
+                        {
+                            gateData.SoundVelocity = newSoundVelocity;
+                            
+                            // 해당 게이트의 인덱스 찾기
+                            var gateDatas = _dataManager.GetAllGateDatas();
+                            int gateIndex = gateDatas.IndexOf(gateData);
+                            
+                            if (gateIndex >= 0)
+                            {
+                                // 해당 게이트와 이후 게이트들의 거리만 다시 계산
+                                UpdateGateDistancesFromIndex(gateIndex);
+                                
+                                System.Diagnostics.Debug.WriteLine($"Gate {gateIndex + 1}의 음속이 {newSoundVelocity} m/s로 변경되었습니다.");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // 유효하지 않은 값이면 원래 값으로 복원
+                        textBox.Text = gateData.SoundVelocity.ToString("F0");
+                        System.Windows.MessageBox.Show("유효하지 않은 음속 값입니다. 0보다 큰 숫자를 입력해주세요.", "입력 오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"음속 값 변경 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         #endregion
@@ -2771,20 +2888,26 @@ namespace SAT_TestProgram
                 var gateDatas = _dataManager.GetAllGateDatas();
                 if (gateDatas == null || gateDatas.Count == 0) return;
 
-                // 음속 값 가져오기
-                if (!double.TryParse(txtSoundVelocity.Text, out double soundVelocity) || soundVelocity <= 0)
-                {
-                    // 유효하지 않은 음속 값이면 거리 계산하지 않음
-                    return;
-                }
-
                 // 체크박스 상태에 따라 사용할 MaxIndex 결정
                 bool useOriginalData = chkUseOriginalDataForMaxIndex?.IsChecked == true;
+
+                // 디버깅 정보 출력
+                System.Diagnostics.Debug.WriteLine($"=== 거리 계산 시작 ===");
+                System.Diagnostics.Debug.WriteLine($"원본 데이터 사용: {useOriginalData}");
+                System.Diagnostics.Debug.WriteLine($"게이트 개수: {gateDatas.Count}");
 
                 // 각 게이트의 거리 계산
                 for (int i = 0; i < gateDatas.Count; i++)
                 {
                     var currentGate = gateDatas[i];
+                    
+                    // 각 게이트의 개별 음속 값 사용 (UI의 음속 값을 강제로 설정하지 않음)
+                    double soundVelocity = currentGate.SoundVelocity;
+                    
+                    System.Diagnostics.Debug.WriteLine($"\n--- Gate {i + 1} ---");
+                    System.Diagnostics.Debug.WriteLine($"GateStart: {currentGate.GateStart}, GateStop: {currentGate.GateStop}");
+                    System.Diagnostics.Debug.WriteLine($"MaxIndexRaw: {currentGate.MaxIndexRaw}, MaxIndexVoid: {currentGate.MaxIndexVoid}");
+                    System.Diagnostics.Debug.WriteLine($"SoundVelocity: {soundVelocity} m/s");
                     
                     if (i == 0)
                     {
@@ -2793,42 +2916,65 @@ namespace SAT_TestProgram
                         currentGate.IndexDifferenceVoid = 0;
                         currentGate.CalculatedDistanceRaw = 0;
                         currentGate.CalculatedDistanceVoid = 0;
+                        
+                        System.Diagnostics.Debug.WriteLine("첫 번째 게이트 - 거리 계산 불가");
                     }
                     else
                     {
                         var previousGate = gateDatas[i - 1];
                         
+                        System.Diagnostics.Debug.WriteLine($"이전 게이트 MaxIndexRaw: {previousGate.MaxIndexRaw}, MaxIndexVoid: {previousGate.MaxIndexVoid}");
+                        
                         // Raw Signal 거리 계산
-                        if (currentGate.MaxIndexRaw >= 0 && previousGate.MaxIndexRaw >= 0)
+                        if (currentGate.MaxIndexRaw >= 0 && previousGate.MaxIndexRaw >= 0 && soundVelocity > 0)
                         {
                             int indexDifferenceRaw = Math.Abs(currentGate.MaxIndexRaw - previousGate.MaxIndexRaw);
                             currentGate.IndexDifferenceRaw = indexDifferenceRaw;
                             // 거리 계산: index 차이(ns) * 음속(m/s) * 1000 / 2 = 거리(μm)
                             double calculatedDistanceRaw = indexDifferenceRaw * soundVelocity * 1000.0 / 2.0;
                             currentGate.CalculatedDistanceRaw = calculatedDistanceRaw;
+                            
+                            System.Diagnostics.Debug.WriteLine($"Raw 거리 계산: {indexDifferenceRaw} ns * {soundVelocity} m/s * 1000 / 2 = {calculatedDistanceRaw} μm");
                         }
                         else
                         {
                             currentGate.IndexDifferenceRaw = 0;
                             currentGate.CalculatedDistanceRaw = 0;
+                            
+                            if (soundVelocity <= 0)
+                                System.Diagnostics.Debug.WriteLine("음속 값이 유효하지 않음 - 거리 계산 불가");
+                            else
+                                System.Diagnostics.Debug.WriteLine("Raw MaxIndex가 유효하지 않음 - 거리 계산 불가");
                         }
                         
                         // Void Signal 거리 계산
-                        if (currentGate.MaxIndexVoid >= 0 && previousGate.MaxIndexVoid >= 0)
+                        if (currentGate.MaxIndexVoid >= 0 && previousGate.MaxIndexVoid >= 0 && soundVelocity > 0)
                         {
                             int indexDifferenceVoid = Math.Abs(currentGate.MaxIndexVoid - previousGate.MaxIndexVoid);
                             currentGate.IndexDifferenceVoid = indexDifferenceVoid;
                             // 거리 계산: index 차이(ns) * 음속(m/s) * 1000 / 2 = 거리(μm)
                             double calculatedDistanceVoid = indexDifferenceVoid * soundVelocity * 1000.0 / 2.0;
                             currentGate.CalculatedDistanceVoid = calculatedDistanceVoid;
+                            
+                            System.Diagnostics.Debug.WriteLine($"Void 거리 계산: {indexDifferenceVoid} ns * {soundVelocity} m/s * 1000 / 2 = {calculatedDistanceVoid} μm");
                         }
                         else
                         {
                             currentGate.IndexDifferenceVoid = 0;
                             currentGate.CalculatedDistanceVoid = 0;
+                            
+                            if (soundVelocity <= 0)
+                                System.Diagnostics.Debug.WriteLine("음속 값이 유효하지 않음 - 거리 계산 불가");
+                            else
+                                System.Diagnostics.Debug.WriteLine("Void MaxIndex가 유효하지 않음 - 거리 계산 불가");
                         }
                     }
                 }
+                
+                System.Diagnostics.Debug.WriteLine("=== 거리 계산 완료 ===");
+                
+                // UI 업데이트를 위해 DataGrid 새로고침
+                dgGateList.Items.Refresh();
             }
             catch (Exception ex)
             {
@@ -2858,6 +3004,113 @@ namespace SAT_TestProgram
         }
 
         #endregion
+
+        /// <summary>
+        /// 특정 인덱스부터 모든 게이트의 거리를 계산하고 업데이트
+        /// </summary>
+        /// <param name="startIndex">시작 인덱스</param>
+        private void UpdateGateDistancesFromIndex(int startIndex)
+        {
+            try
+            {
+                if (_dataManager == null) return;
+
+                var gateDatas = _dataManager.GetAllGateDatas();
+                if (gateDatas == null || gateDatas.Count == 0) return;
+
+                // 체크박스 상태에 따라 사용할 MaxIndex 결정
+                bool useOriginalData = chkUseOriginalDataForMaxIndex?.IsChecked == true;
+
+                // 디버깅 정보 출력
+                System.Diagnostics.Debug.WriteLine($"=== 거리 계산 시작 (인덱스 {startIndex}부터) ===");
+                System.Diagnostics.Debug.WriteLine($"원본 데이터 사용: {useOriginalData}");
+                System.Diagnostics.Debug.WriteLine($"게이트 개수: {gateDatas.Count}");
+
+                // 지정된 인덱스부터 각 게이트의 거리 계산
+                for (int i = startIndex; i < gateDatas.Count; i++)
+                {
+                    var currentGate = gateDatas[i];
+                    
+                    // 각 게이트의 개별 음속 값 사용
+                    double soundVelocity = currentGate.SoundVelocity;
+                    
+                    System.Diagnostics.Debug.WriteLine($"\n--- Gate {i + 1} ---");
+                    System.Diagnostics.Debug.WriteLine($"GateStart: {currentGate.GateStart}, GateStop: {currentGate.GateStop}");
+                    System.Diagnostics.Debug.WriteLine($"MaxIndexRaw: {currentGate.MaxIndexRaw}, MaxIndexVoid: {currentGate.MaxIndexVoid}");
+                    System.Diagnostics.Debug.WriteLine($"SoundVelocity: {soundVelocity} m/s");
+                    
+                    if (i == 0)
+                    {
+                        // 첫 번째 게이트는 이전 게이트가 없으므로 거리 계산 불가
+                        currentGate.IndexDifferenceRaw = 0;
+                        currentGate.IndexDifferenceVoid = 0;
+                        currentGate.CalculatedDistanceRaw = 0;
+                        currentGate.CalculatedDistanceVoid = 0;
+                        
+                        System.Diagnostics.Debug.WriteLine("첫 번째 게이트 - 거리 계산 불가");
+                    }
+                    else
+                    {
+                        var previousGate = gateDatas[i - 1];
+                        
+                        System.Diagnostics.Debug.WriteLine($"이전 게이트 MaxIndexRaw: {previousGate.MaxIndexRaw}, MaxIndexVoid: {previousGate.MaxIndexVoid}");
+                        
+                        // Raw Signal 거리 계산
+                        if (currentGate.MaxIndexRaw >= 0 && previousGate.MaxIndexRaw >= 0 && soundVelocity > 0)
+                        {
+                            int indexDifferenceRaw = Math.Abs(currentGate.MaxIndexRaw - previousGate.MaxIndexRaw);
+                            currentGate.IndexDifferenceRaw = indexDifferenceRaw;
+                            // 거리 계산: index 차이(ns) * 음속(m/s) * 1000 / 2 = 거리(μm)
+                            double calculatedDistanceRaw = indexDifferenceRaw * soundVelocity * 1000.0 / 2.0;
+                            currentGate.CalculatedDistanceRaw = calculatedDistanceRaw;
+                            
+                            System.Diagnostics.Debug.WriteLine($"Raw 거리 계산: {indexDifferenceRaw} ns * {soundVelocity} m/s * 1000 / 2 = {calculatedDistanceRaw} μm");
+                        }
+                        else
+                        {
+                            currentGate.IndexDifferenceRaw = 0;
+                            currentGate.CalculatedDistanceRaw = 0;
+                            
+                            if (soundVelocity <= 0)
+                                System.Diagnostics.Debug.WriteLine("음속 값이 유효하지 않음 - 거리 계산 불가");
+                            else
+                                System.Diagnostics.Debug.WriteLine("Raw MaxIndex가 유효하지 않음 - 거리 계산 불가");
+                        }
+                        
+                        // Void Signal 거리 계산
+                        if (currentGate.MaxIndexVoid >= 0 && previousGate.MaxIndexVoid >= 0 && soundVelocity > 0)
+                        {
+                            int indexDifferenceVoid = Math.Abs(currentGate.MaxIndexVoid - previousGate.MaxIndexVoid);
+                            currentGate.IndexDifferenceVoid = indexDifferenceVoid;
+                            // 거리 계산: index 차이(ns) * 음속(m/s) * 1000 / 2 = 거리(μm)
+                            double calculatedDistanceVoid = indexDifferenceVoid * soundVelocity * 1000.0 / 2.0;
+                            currentGate.CalculatedDistanceVoid = calculatedDistanceVoid;
+                            
+                            System.Diagnostics.Debug.WriteLine($"Void 거리 계산: {indexDifferenceVoid} ns * {soundVelocity} m/s * 1000 / 2 = {calculatedDistanceVoid} μm");
+                        }
+                        else
+                        {
+                            currentGate.IndexDifferenceVoid = 0;
+                            currentGate.CalculatedDistanceVoid = 0;
+                            
+                            if (soundVelocity <= 0)
+                                System.Diagnostics.Debug.WriteLine("음속 값이 유효하지 않음 - 거리 계산 불가");
+                            else
+                                System.Diagnostics.Debug.WriteLine("Void MaxIndex가 유효하지 않음 - 거리 계산 불가");
+                        }
+                    }
+                }
+                
+                System.Diagnostics.Debug.WriteLine("=== 거리 계산 완료 ===");
+                
+                // UI 업데이트를 위해 DataGrid 새로고침
+                dgGateList.Items.Refresh();
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"거리 계산 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
     }
 }
 
