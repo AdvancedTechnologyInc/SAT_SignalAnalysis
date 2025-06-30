@@ -2891,6 +2891,11 @@ namespace SAT_TestProgram
                 // 체크박스 상태에 따라 사용할 MaxIndex 결정
                 bool useOriginalData = chkUseOriginalDataForMaxIndex?.IsChecked == true;
 
+                // 단위 변환 상수 정의
+                const double NS_TO_S = 1e-9;        // 나노초를 초로 변환
+                const double M_TO_UM = 1e6;         // 미터를 마이크로미터로 변환
+                const double ROUND_TRIP_FACTOR = 2.0; // 왕복 거리를 편도 거리로 변환
+
                 // 디버깅 정보 출력
                 System.Diagnostics.Debug.WriteLine($"=== 거리 계산 시작 ===");
                 System.Diagnostics.Debug.WriteLine($"원본 데이터 사용: {useOriginalData}");
@@ -2930,11 +2935,25 @@ namespace SAT_TestProgram
                         {
                             int indexDifferenceRaw = Math.Abs(currentGate.MaxIndexRaw - previousGate.MaxIndexRaw);
                             currentGate.IndexDifferenceRaw = indexDifferenceRaw;
-                            // 거리 계산: index 차이(ns) * 음속(m/s) * 1000 / 2 = 거리(μm)
-                            double calculatedDistanceRaw = indexDifferenceRaw * soundVelocity * 1000.0 / 2.0;
+                            
+                            // 단위 변환을 명확하게 수행
+                            // 1. index 차이를 시간으로 변환 (ns → s)
+                            double timeDifferenceRaw = indexDifferenceRaw * NS_TO_S;
+                            // 2. 시간과 음속을 곱해서 거리 계산 (s × m/s = m)
+                            double distanceInMetersRaw = timeDifferenceRaw * soundVelocity;
+                            // 3. 미터를 마이크로미터로 변환 (m → μm)
+                            double distanceInMicrometersRaw = distanceInMetersRaw * M_TO_UM;
+                            // 4. 왕복 거리를 편도 거리로 변환 (왕복 거리 / 2)
+                            double calculatedDistanceRaw = distanceInMicrometersRaw / ROUND_TRIP_FACTOR;
+                            
                             currentGate.CalculatedDistanceRaw = calculatedDistanceRaw;
                             
-                            System.Diagnostics.Debug.WriteLine($"Raw 거리 계산: {indexDifferenceRaw} ns * {soundVelocity} m/s * 1000 / 2 = {calculatedDistanceRaw} μm");
+                            System.Diagnostics.Debug.WriteLine($"Raw 거리 계산:");
+                            System.Diagnostics.Debug.WriteLine($"  Index 차이: {indexDifferenceRaw} ns");
+                            System.Diagnostics.Debug.WriteLine($"  시간 차이: {timeDifferenceRaw:F12} s");
+                            System.Diagnostics.Debug.WriteLine($"  거리(미터): {distanceInMetersRaw:F12} m");
+                            System.Diagnostics.Debug.WriteLine($"  거리(마이크로미터): {distanceInMicrometersRaw:F6} μm");
+                            System.Diagnostics.Debug.WriteLine($"  최종 거리(편도): {calculatedDistanceRaw:F1} μm");
                         }
                         else
                         {
@@ -2952,11 +2971,25 @@ namespace SAT_TestProgram
                         {
                             int indexDifferenceVoid = Math.Abs(currentGate.MaxIndexVoid - previousGate.MaxIndexVoid);
                             currentGate.IndexDifferenceVoid = indexDifferenceVoid;
-                            // 거리 계산: index 차이(ns) * 음속(m/s) * 1000 / 2 = 거리(μm)
-                            double calculatedDistanceVoid = indexDifferenceVoid * soundVelocity * 1000.0 / 2.0;
+                            
+                            // 단위 변환을 명확하게 수행
+                            // 1. index 차이를 시간으로 변환 (ns → s)
+                            double timeDifferenceVoid = indexDifferenceVoid * NS_TO_S;
+                            // 2. 시간과 음속을 곱해서 거리 계산 (s × m/s = m)
+                            double distanceInMetersVoid = timeDifferenceVoid * soundVelocity;
+                            // 3. 미터를 마이크로미터로 변환 (m → μm)
+                            double distanceInMicrometersVoid = distanceInMetersVoid * M_TO_UM;
+                            // 4. 왕복 거리를 편도 거리로 변환 (왕복 거리 / 2)
+                            double calculatedDistanceVoid = distanceInMicrometersVoid / ROUND_TRIP_FACTOR;
+                            
                             currentGate.CalculatedDistanceVoid = calculatedDistanceVoid;
                             
-                            System.Diagnostics.Debug.WriteLine($"Void 거리 계산: {indexDifferenceVoid} ns * {soundVelocity} m/s * 1000 / 2 = {calculatedDistanceVoid} μm");
+                            System.Diagnostics.Debug.WriteLine($"Void 거리 계산:");
+                            System.Diagnostics.Debug.WriteLine($"  Index 차이: {indexDifferenceVoid} ns");
+                            System.Diagnostics.Debug.WriteLine($"  시간 차이: {timeDifferenceVoid:F12} s");
+                            System.Diagnostics.Debug.WriteLine($"  거리(미터): {distanceInMetersVoid:F12} m");
+                            System.Diagnostics.Debug.WriteLine($"  거리(마이크로미터): {distanceInMicrometersVoid:F6} μm");
+                            System.Diagnostics.Debug.WriteLine($"  최종 거리(편도): {calculatedDistanceVoid:F1} μm");
                         }
                         else
                         {
@@ -3021,6 +3054,11 @@ namespace SAT_TestProgram
                 // 체크박스 상태에 따라 사용할 MaxIndex 결정
                 bool useOriginalData = chkUseOriginalDataForMaxIndex?.IsChecked == true;
 
+                // 단위 변환 상수 정의
+                const double NS_TO_S = 1e-9;        // 나노초를 초로 변환
+                const double M_TO_UM = 1e6;         // 미터를 마이크로미터로 변환
+                const double ROUND_TRIP_FACTOR = 2.0; // 왕복 거리를 편도 거리로 변환
+
                 // 디버깅 정보 출력
                 System.Diagnostics.Debug.WriteLine($"=== 거리 계산 시작 (인덱스 {startIndex}부터) ===");
                 System.Diagnostics.Debug.WriteLine($"원본 데이터 사용: {useOriginalData}");
@@ -3060,11 +3098,25 @@ namespace SAT_TestProgram
                         {
                             int indexDifferenceRaw = Math.Abs(currentGate.MaxIndexRaw - previousGate.MaxIndexRaw);
                             currentGate.IndexDifferenceRaw = indexDifferenceRaw;
-                            // 거리 계산: index 차이(ns) * 음속(m/s) * 1000 / 2 = 거리(μm)
-                            double calculatedDistanceRaw = indexDifferenceRaw * soundVelocity * 1000.0 / 2.0;
+                            
+                            // 단위 변환을 명확하게 수행
+                            // 1. index 차이를 시간으로 변환 (ns → s)
+                            double timeDifferenceRaw = indexDifferenceRaw * NS_TO_S;
+                            // 2. 시간과 음속을 곱해서 거리 계산 (s × m/s = m)
+                            double distanceInMetersRaw = timeDifferenceRaw * soundVelocity;
+                            // 3. 미터를 마이크로미터로 변환 (m → μm)
+                            double distanceInMicrometersRaw = distanceInMetersRaw * M_TO_UM;
+                            // 4. 왕복 거리를 편도 거리로 변환 (왕복 거리 / 2)
+                            double calculatedDistanceRaw = distanceInMicrometersRaw / ROUND_TRIP_FACTOR;
+                            
                             currentGate.CalculatedDistanceRaw = calculatedDistanceRaw;
                             
-                            System.Diagnostics.Debug.WriteLine($"Raw 거리 계산: {indexDifferenceRaw} ns * {soundVelocity} m/s * 1000 / 2 = {calculatedDistanceRaw} μm");
+                            System.Diagnostics.Debug.WriteLine($"Raw 거리 계산:");
+                            System.Diagnostics.Debug.WriteLine($"  Index 차이: {indexDifferenceRaw} ns");
+                            System.Diagnostics.Debug.WriteLine($"  시간 차이: {timeDifferenceRaw:F12} s");
+                            System.Diagnostics.Debug.WriteLine($"  거리(미터): {distanceInMetersRaw:F12} m");
+                            System.Diagnostics.Debug.WriteLine($"  거리(마이크로미터): {distanceInMicrometersRaw:F6} μm");
+                            System.Diagnostics.Debug.WriteLine($"  최종 거리(편도): {calculatedDistanceRaw:F1} μm");
                         }
                         else
                         {
@@ -3082,11 +3134,25 @@ namespace SAT_TestProgram
                         {
                             int indexDifferenceVoid = Math.Abs(currentGate.MaxIndexVoid - previousGate.MaxIndexVoid);
                             currentGate.IndexDifferenceVoid = indexDifferenceVoid;
-                            // 거리 계산: index 차이(ns) * 음속(m/s) * 1000 / 2 = 거리(μm)
-                            double calculatedDistanceVoid = indexDifferenceVoid * soundVelocity * 1000.0 / 2.0;
+                            
+                            // 단위 변환을 명확하게 수행
+                            // 1. index 차이를 시간으로 변환 (ns → s)
+                            double timeDifferenceVoid = indexDifferenceVoid * NS_TO_S;
+                            // 2. 시간과 음속을 곱해서 거리 계산 (s × m/s = m)
+                            double distanceInMetersVoid = timeDifferenceVoid * soundVelocity;
+                            // 3. 미터를 마이크로미터로 변환 (m → μm)
+                            double distanceInMicrometersVoid = distanceInMetersVoid * M_TO_UM;
+                            // 4. 왕복 거리를 편도 거리로 변환 (왕복 거리 / 2)
+                            double calculatedDistanceVoid = distanceInMicrometersVoid / ROUND_TRIP_FACTOR;
+                            
                             currentGate.CalculatedDistanceVoid = calculatedDistanceVoid;
                             
-                            System.Diagnostics.Debug.WriteLine($"Void 거리 계산: {indexDifferenceVoid} ns * {soundVelocity} m/s * 1000 / 2 = {calculatedDistanceVoid} μm");
+                            System.Diagnostics.Debug.WriteLine($"Void 거리 계산:");
+                            System.Diagnostics.Debug.WriteLine($"  Index 차이: {indexDifferenceVoid} ns");
+                            System.Diagnostics.Debug.WriteLine($"  시간 차이: {timeDifferenceVoid:F12} s");
+                            System.Diagnostics.Debug.WriteLine($"  거리(미터): {distanceInMetersVoid:F12} m");
+                            System.Diagnostics.Debug.WriteLine($"  거리(마이크로미터): {distanceInMicrometersVoid:F6} μm");
+                            System.Diagnostics.Debug.WriteLine($"  최종 거리(편도): {calculatedDistanceVoid:F1} μm");
                         }
                         else
                         {

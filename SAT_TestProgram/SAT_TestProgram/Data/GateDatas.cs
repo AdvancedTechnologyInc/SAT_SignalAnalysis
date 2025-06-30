@@ -147,7 +147,16 @@ namespace SAT_TestProgram.Data
             {
                 _calculatedDistanceRaw = value;
                 OnPropertyChanged(nameof(CalculatedDistanceRaw));
+                OnPropertyChanged(nameof(CalculatedDistanceRawFormatted));
             }
+        }
+
+        /// <summary>
+        /// Raw Signal에서 계산된 거리 (μm) - 소수점 첫째 자리까지 포맷
+        /// </summary>
+        public string CalculatedDistanceRawFormatted
+        {
+            get => _calculatedDistanceRaw.ToString("F1");
         }
 
         /// <summary>
@@ -160,7 +169,16 @@ namespace SAT_TestProgram.Data
             {
                 _calculatedDistanceVoid = value;
                 OnPropertyChanged(nameof(CalculatedDistanceVoid));
+                OnPropertyChanged(nameof(CalculatedDistanceVoidFormatted));
             }
+        }
+
+        /// <summary>
+        /// Void Signal에서 계산된 거리 (μm) - 소수점 첫째 자리까지 포맷
+        /// </summary>
+        public string CalculatedDistanceVoidFormatted
+        {
+            get => _calculatedDistanceVoid.ToString("F1");
         }
 
         /// <summary>
