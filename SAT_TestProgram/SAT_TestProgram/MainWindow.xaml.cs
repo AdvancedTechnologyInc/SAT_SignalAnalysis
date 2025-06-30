@@ -36,9 +36,11 @@ namespace SAT_TestProgram
         private readonly Models.SignalProcessor _signalProcessor;
         private DataModel _rawSignalData;
         private DataModel _voidSignalData;
+        private DataModel _bScanData;
         private ObservableCollection<string> _appliedAlgorithms;
         private ScatterPlot rawScatter;
         private ScatterPlot voidScatter;
+        private ScatterPlot bScanScatter;
 
         // Gate Editor 관련 필드
         private int _selectedGateIndex = -1;
@@ -55,6 +57,7 @@ namespace SAT_TestProgram
             // Initialize variables
             _rawSignalData = null;
             _voidSignalData = null;
+            _bScanData = null;
             _appliedAlgorithms = new ObservableCollection<string>();
 
             // Bind the algorithms list
@@ -65,9 +68,20 @@ namespace SAT_TestProgram
             // Add mouse click event handlers for plots
             plotUpper.MouseDown += Plot_MouseDown;
             plotLower.MouseDown += Plot_MouseDown;
+            plotBScan.MouseDown += Plot_MouseDown;
 
             // Initialize Gate Editor
             InitializeGateEditor();
+
+            // Add mouse move event handlers for mouse position tracking
+            plotUpper.MouseMove += Plot_MouseMove;
+            plotLower.MouseMove += Plot_MouseMove;
+            plotBScan.MouseMove += Plot_MouseMove;
+            
+            // Add mouse leave event handlers to clear position info
+            plotUpper.MouseLeave += Plot_MouseLeave;
+            plotLower.MouseLeave += Plot_MouseLeave;
+            plotBScan.MouseLeave += Plot_MouseLeave;
         }
 
         private void InitializePlots()
@@ -89,6 +103,12 @@ namespace SAT_TestProgram
                 plotPreview.Plot.XLabel("Index");
                 plotPreview.Plot.YLabel("Voltage");
                 plotPreview.Refresh();
+
+                // Initialize B Scan plot
+                plotBScan.Plot.Title("B Scan Data");
+                plotBScan.Plot.XLabel("Index");
+                plotBScan.Plot.YLabel("Voltage");
+                plotBScan.Refresh();
 
                 // Set initial axis limits
                 InitializeAxisLimits();
@@ -271,6 +291,51 @@ namespace SAT_TestProgram
             
             // MaxIndex 업데이트
             UpdateAllGateMaxIndices();
+        }
+
+        private async void BtnLoadBScanData_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                Filter = ConstValue.FileDialogs.CsvFilter,
+                FilterIndex = ConstValue.FileDialogs.DefaultFilterIndex
+            };
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    // Clear previous data first
+                    _bScanData = null;
+                    plotBScan.Plot.Clear();
+                    plotBScan.Refresh();
+
+                    string fileName = System.IO.Path.GetFileNameWithoutExtension(openFileDialog.FileName);
+                    await _dataManager.LoadDataAsync(openFileDialog.FileName);
+                    if (_dataManager.CurrentData != null)
+                    {
+                        _dataManager.CurrentData.FileName = fileName;
+                        _bScanData = _dataManager.CurrentData;
+                        
+                        UpdateBScanPlot(_bScanData);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show(
+                        $"B Scan 데이터 로드 중 오류 발생: {ex.Message}",
+                        "오류",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void BtnClearBScanData_Click(object sender, RoutedEventArgs e)
+        {
+            _bScanData = null;
+            plotBScan.Plot.Clear();
+            plotBScan.Refresh();
         }
 
         private void Algorithm_Click(object sender, RoutedEventArgs e)
@@ -834,6 +899,10 @@ namespace SAT_TestProgram
                 {
                     txtLowerMousePosition.Text = $"Index: {index}, Value: {value:F3}";
                 }
+                else if (plot == plotBScan)
+                {
+                    txtBScanMousePosition.Text = $"Index: {index}, Value: {value:F3}";
+                }
             }
             catch (Exception ex)
             {
@@ -859,6 +928,10 @@ namespace SAT_TestProgram
                 else if (plot == plotLower)
                 {
                     txtLowerMousePosition.Text = "Index: --, Value: --";
+                }
+                else if (plot == plotBScan)
+                {
+                    txtBScanMousePosition.Text = "Index: --, Value: --";
                 }
             }
             catch (Exception ex)
@@ -2057,9 +2130,13 @@ namespace SAT_TestProgram
                     AddGatesToPlot(plotLower.Plot, gateDatas, "Void Signal Gates");
                 }
 
+                // B Scan 그래프에 게이트 표시
+                AddGatesToPlot(plotBScan.Plot, gateDatas, "B Scan Gates");
+
                 // 그래프 새로고침
                 plotUpper.Refresh();
                 plotLower.Refresh();
+                plotBScan.Refresh();
             }
             catch (Exception ex)
             {
@@ -2191,6 +2268,10 @@ namespace SAT_TestProgram
                         {
                             plotLower.Plot.Remove(element);
                         }
+                        if (plotBScan?.Plot != null)
+                        {
+                            plotBScan.Plot.Remove(element);
+                        }
                     }
                     catch (Exception)
                     {
@@ -2204,6 +2285,7 @@ namespace SAT_TestProgram
                 // 그래프 새로고침
                 plotUpper?.Refresh();
                 plotLower?.Refresh();
+                plotBScan?.Refresh();
             }
             catch (Exception ex)
             {
@@ -2454,6 +2536,30 @@ namespace SAT_TestProgram
             if (plotLower?.Plot != null)
             {
                 UpdateLegendDisplay(false, false);
+            }
+        }
+
+        /// <summary>
+        /// B Scan Graph 범례 표시 체크박스 체크 이벤트
+        /// </summary>
+        private void ChkShowLegendBScan_Checked(object sender, RoutedEventArgs e)
+        {
+            if (plotBScan?.Plot != null)
+            {
+                plotBScan.Plot.Legend();
+                plotBScan.Refresh();
+            }
+        }
+
+        /// <summary>
+        /// B Scan Graph 범례 표시 체크박스 언체크 이벤트
+        /// </summary>
+        private void ChkShowLegendBScan_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (plotBScan?.Plot != null)
+            {
+                plotBScan.Plot.Legend(false);
+                plotBScan.Refresh();
             }
         }
 
@@ -3175,6 +3281,82 @@ namespace SAT_TestProgram
             catch (Exception ex)
             {
                 System.Windows.MessageBox.Show($"거리 계산 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// B Scan 플롯에 데이터를 표시
+        /// </summary>
+        /// <param name="data">표시할 데이터</param>
+        private void UpdateBScanPlot(DataModel data)
+        {
+            try
+            {
+                if (data == null) return;
+
+                plotBScan.Plot.Clear();
+
+                // Set plot title using the file name without extension
+                string title = string.IsNullOrEmpty(data.FileName) ? "B Scan Data" : $"B Scan - {data.FileName}";
+                plotBScan.Plot.Title(title);
+
+                // Create index-based X-axis data
+                float[] indexAxis = new float[data.YData.Length];
+                for (int i = 0; i < data.YData.Length; i++)
+                {
+                    indexAxis[i] = i;
+                }
+
+                // Convert float arrays to double arrays for plotting
+                double[] xData = indexAxis.Select(x => (double)x).ToArray();
+                double[] yData = data.YData.Select(y => (double)y).ToArray();
+
+                // Plot the main signal data
+                bScanScatter = plotBScan.Plot.AddScatter(
+                    xData,
+                    yData,
+                    label: "B Scan Signal"
+                );
+
+                // Update X-axis label to show it's index based
+                plotBScan.Plot.XLabel("Index");
+
+                // Show legend if checkbox is checked
+                if (chkShowLegendBScan?.IsChecked == true)
+                {
+                    plotBScan.Plot.Legend();
+                }
+                else
+                {
+                    plotBScan.Plot.Legend(false);
+                }
+
+                // Update axis limits
+                if (data.YData.Length > 0)
+                {
+                    double xMin = 0;
+                    double xMax = data.YData.Length - 1;
+                    double yMin = data.YData.Min();
+                    double yMax = data.YData.Max();
+
+                    // Add some padding
+                    double xPadding = (xMax - xMin) * 0.05;
+                    double yPadding = (yMax - yMin) * 0.05;
+
+                    plotBScan.Plot.SetAxisLimits(
+                        xMin: xMin - xPadding,
+                        xMax: xMax + xPadding,
+                        yMin: yMin - yPadding,
+                        yMax: yMax + yPadding
+                    );
+                }
+
+                // Refresh the plot
+                plotBScan.Refresh();
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"B Scan 플롯 업데이트 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }

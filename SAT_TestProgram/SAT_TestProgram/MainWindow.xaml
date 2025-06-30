@@ -184,65 +184,179 @@
         </GroupBox>
 
         <!-- Middle Section - Graphs -->
-        <GroupBox Grid.Column="1" 
-                 Header="Signal View" 
-                 Margin="5"
-                 BorderBrush="Gray"
-                 BorderThickness="1">
-            <GroupBox.HeaderTemplate>
-                <DataTemplate>
-                    <TextBlock Text="{Binding}"
-                             FontSize="16"
-                             FontWeight="Bold"/>
-                </DataTemplate>
-            </GroupBox.HeaderTemplate>
-            <Grid Background="White">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
+        <TabControl Grid.Column="1" 
+                   Margin="5"
+                   BorderBrush="Gray"
+                   BorderThickness="1">
+            
+            <!-- A Scan Data Tab -->
+            <TabItem Header="A Scan Data">
+                <Grid Background="White">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
 
-                <!-- Upper Graph Section -->
-                <Grid Grid.Row="0">
+                    <!-- Upper Graph Section -->
+                    <Grid Grid.Row="0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <!-- Upper Graph Controls -->
+                        <StackPanel Grid.Row="0" 
+                                  Orientation="Horizontal" 
+                                  Margin="10,5,5,0"
+                                  Background="#F5F5F5">
+                            <CheckBox x:Name="chkRawSignal" 
+                                    Content="Raw Signal" 
+                                    Margin="5,0,15,0" 
+                                    IsChecked="True"
+                                    VerticalAlignment="Center"/>
+                            <CheckBox x:Name="chkContinuousProcessingUpper"
+                                    Content="연속 처리"
+                                    Margin="5,0,15,0"
+                                    IsChecked="False"
+                                    VerticalAlignment="Center"/>
+                            <CheckBox x:Name="chkShowLegendUpper"
+                                    Content="범례 표시"
+                                    Margin="5,0,15,0"
+                                    IsChecked="True"
+                                    VerticalAlignment="Center"
+                                    Checked="ChkShowLegendUpper_Checked"
+                                    Unchecked="ChkShowLegendUpper_Unchecked"/>
+                        </StackPanel>
+
+                        <!-- Upper Graph -->
+                        <Border Grid.Row="1" 
+                               Margin="5" 
+                               BorderBrush="LightGray" 
+                               BorderThickness="1">
+                            <ScottPlot:WpfPlot x:Name="plotUpper"/>
+                        </Border>
+                        
+                        <!-- Upper Graph Mouse Position Info -->
+                        <StackPanel Grid.Row="2" 
+                                  Orientation="Horizontal" 
+                                  Margin="10,2,5,5"
+                                  Background="#F0F0F0">
+                            <TextBlock Text="Mouse Position: " 
+                                     FontWeight="Bold" 
+                                     VerticalAlignment="Center" 
+                                     Margin="5,0"/>
+                            <TextBlock x:Name="txtUpperMousePosition" 
+                                     Text="Index: --, Value: --" 
+                                     VerticalAlignment="Center" 
+                                     Margin="5,0"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Lower Graph Section -->
+                    <Grid Grid.Row="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <!-- Lower Graph Controls -->
+                        <StackPanel Grid.Row="0" 
+                                  Orientation="Horizontal" 
+                                  Margin="10,5,5,0"
+                                  Background="#F5F5F5">
+                            <CheckBox x:Name="chkProcessedSignal" 
+                                    Content="Void Signal" 
+                                    Margin="5,0,15,0" 
+                                    IsChecked="True"
+                                    VerticalAlignment="Center"/>
+                            <CheckBox x:Name="chkContinuousProcessingLower"
+                                    Content="연속 처리"
+                                    Margin="5,0,15,0"
+                                    IsChecked="False"
+                                    VerticalAlignment="Center"/>
+                            <CheckBox x:Name="chkShowLegendLower"
+                                    Content="범례 표시"
+                                    Margin="5,0,15,0"
+                                    IsChecked="True"
+                                    VerticalAlignment="Center"
+                                    Checked="ChkShowLegendLower_Checked"
+                                    Unchecked="ChkShowLegendLower_Unchecked"/>
+                        </StackPanel>
+
+                        <!-- Lower Graph -->
+                        <Border Grid.Row="1" 
+                               Margin="5" 
+                               BorderBrush="LightGray" 
+                               BorderThickness="1">
+                            <ScottPlot:WpfPlot x:Name="plotLower"/>
+                        </Border>
+                        
+                        <!-- Lower Graph Mouse Position Info -->
+                        <StackPanel Grid.Row="2" 
+                                  Orientation="Horizontal" 
+                                  Margin="10,2,5,5"
+                                  Background="#F0F0F0">
+                            <TextBlock Text="Mouse Position: " 
+                                     FontWeight="Bold" 
+                                     VerticalAlignment="Center" 
+                                     Margin="5,0"/>
+                            <TextBlock x:Name="txtLowerMousePosition" 
+                                     Text="Index: --, Value: --" 
+                                     VerticalAlignment="Center" 
+                                     Margin="5,0"/>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <!-- B Scan Data Tab -->
+            <TabItem Header="B Scan Data">
+                <Grid Background="White">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    
-                    <!-- Upper Graph Controls -->
+
+                    <!-- B Scan Controls -->
                     <StackPanel Grid.Row="0" 
                               Orientation="Horizontal" 
                               Margin="10,5,5,0"
                               Background="#F5F5F5">
-                        <CheckBox x:Name="chkRawSignal" 
-                                Content="Raw Signal" 
-                                Margin="5,0,15,0" 
-                                IsChecked="True"
-                                VerticalAlignment="Center"/>
-                        <CheckBox x:Name="chkContinuousProcessingUpper"
-                                Content="연속 처리"
+                        <TextBlock Text="B Scan Data View" 
+                                 FontWeight="Bold" 
+                                 VerticalAlignment="Center" 
+                                 Margin="5,0"/>
+                        <Button x:Name="btnLoadBScanData"
+                                Content="Load B Scan Data"
+                                Margin="15,0,15,0"
+                                Padding="5,2"
+                                Click="BtnLoadBScanData_Click"/>
+                        <Button x:Name="btnClearBScanData"
+                                Content="Clear B Scan Data"
                                 Margin="5,0,15,0"
-                                IsChecked="False"
-                                VerticalAlignment="Center"/>
-                        <CheckBox x:Name="chkShowLegendUpper"
+                                Padding="5,2"
+                                Click="BtnClearBScanData_Click"/>
+                        <CheckBox x:Name="chkShowLegendBScan"
                                 Content="범례 표시"
-                                Margin="5,0,15,0"
+                                Margin="15,0,15,0"
                                 IsChecked="True"
                                 VerticalAlignment="Center"
-                                Checked="ChkShowLegendUpper_Checked"
-                                Unchecked="ChkShowLegendUpper_Unchecked"/>
+                                Checked="ChkShowLegendBScan_Checked"
+                                Unchecked="ChkShowLegendBScan_Unchecked"/>
                     </StackPanel>
 
-                    <!-- Upper Graph -->
+                    <!-- B Scan Graph -->
                     <Border Grid.Row="1" 
                            Margin="5" 
                            BorderBrush="LightGray" 
                            BorderThickness="1">
-                        <ScottPlot:WpfPlot x:Name="plotUpper"/>
+                        <ScottPlot:WpfPlot x:Name="plotBScan"/>
                     </Border>
                     
-                    <!-- Upper Graph Mouse Position Info -->
+                    <!-- B Scan Mouse Position Info -->
                     <StackPanel Grid.Row="2" 
                               Orientation="Horizontal" 
                               Margin="10,2,5,5"
@@ -251,70 +365,14 @@
                                  FontWeight="Bold" 
                                  VerticalAlignment="Center" 
                                  Margin="5,0"/>
-                        <TextBlock x:Name="txtUpperMousePosition" 
+                        <TextBlock x:Name="txtBScanMousePosition" 
                                  Text="Index: --, Value: --" 
                                  VerticalAlignment="Center" 
                                  Margin="5,0"/>
                     </StackPanel>
                 </Grid>
-
-                <!-- Lower Graph Section -->
-                <Grid Grid.Row="1">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    
-                    <!-- Lower Graph Controls -->
-                    <StackPanel Grid.Row="0" 
-                              Orientation="Horizontal" 
-                              Margin="10,5,5,0"
-                              Background="#F5F5F5">
-                        <CheckBox x:Name="chkProcessedSignal" 
-                                Content="Void Signal" 
-                                Margin="5,0,15,0" 
-                                IsChecked="True"
-                                VerticalAlignment="Center"/>
-                        <CheckBox x:Name="chkContinuousProcessingLower"
-                                Content="연속 처리"
-                                Margin="5,0,15,0"
-                                IsChecked="False"
-                                VerticalAlignment="Center"/>
-                        <CheckBox x:Name="chkShowLegendLower"
-                                Content="범례 표시"
-                                Margin="5,0,15,0"
-                                IsChecked="True"
-                                VerticalAlignment="Center"
-                                Checked="ChkShowLegendLower_Checked"
-                                Unchecked="ChkShowLegendLower_Unchecked"/>
-                    </StackPanel>
-
-                    <!-- Lower Graph -->
-                    <Border Grid.Row="1" 
-                           Margin="5" 
-                           BorderBrush="LightGray" 
-                           BorderThickness="1">
-                        <ScottPlot:WpfPlot x:Name="plotLower"/>
-                    </Border>
-                    
-                    <!-- Lower Graph Mouse Position Info -->
-                    <StackPanel Grid.Row="2" 
-                              Orientation="Horizontal" 
-                              Margin="10,2,5,5"
-                              Background="#F0F0F0">
-                        <TextBlock Text="Mouse Position: " 
-                                 FontWeight="Bold" 
-                                 VerticalAlignment="Center" 
-                                 Margin="5,0"/>
-                        <TextBlock x:Name="txtLowerMousePosition" 
-                                 Text="Index: --, Value: --" 
-                                 VerticalAlignment="Center" 
-                                 Margin="5,0"/>
-                    </StackPanel>
-                </Grid>
-            </Grid>
-        </GroupBox>
+            </TabItem>
+        </TabControl>
 
         <!-- Right Section - Scale Controls -->
         <GroupBox Grid.Column="2" 
