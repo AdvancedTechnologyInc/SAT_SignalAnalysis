@@ -90,6 +90,16 @@ namespace SAT_TestProgram.Data
         private int _indexStop = 100;
 
         /// <summary>
+        /// B Scan 라인 데이터
+        /// </summary>
+        public int[,] BscanLine = new int[,] { };
+
+        /// <summary>
+        /// B Scan 결과 데이터
+        /// </summary>
+        public double[,] BscanEnvelope = new double[,] { };
+
+        /// <summary>
         /// 게이트 데이터 컬렉션
         /// </summary>
         public ObservableCollection<GateDatas> GateDatas

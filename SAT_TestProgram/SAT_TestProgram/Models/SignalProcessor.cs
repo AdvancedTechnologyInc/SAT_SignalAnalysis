@@ -604,6 +604,56 @@ namespace SAT_TestProgram.Models
             }
             return result;
         }
+
+        /// <summary>
+        /// Hilbert 변환을 사용하여 신호의 포락선을 계산
+        /// </summary>
+        /// <param name="input">입력 신호 (정수 배열)</param>
+        /// <returns>포락선 신호</returns>
+        public static double[] ComputeEnvelope(int[] input)
+        {
+            int n = input.Length;
+
+            // 1. int[] → double[] 변환 + DC 성분 제거
+            double[] real = input.Select(v => (double)v).ToArray();
+            double mean = real.Average();
+            for (int i = 0; i < n; i++)
+                real[i] -= mean;
+
+            // 2. 복소수 배열로 변환
+            Complex[] spectrum = real.Select(r => new Complex(r, 0)).ToArray();
+
+            // 3. FFT
+            Fourier.Forward(spectrum, FourierOptions.Matlab);
+
+            // 4. Hilbert 필터 적용
+            Complex[] H = new Complex[n];
+            H[0] = Complex.One;
+            if (n % 2 == 0)
+            {
+                H[n / 2] = Complex.One;
+                for (int i = 1; i < n / 2; i++)
+                    H[i] = new Complex(2, 0);
+            }
+            else
+            {
+                for (int i = 1; i < (n + 1) / 2; i++)
+                    H[i] = new Complex(2, 0);
+            }
+
+            for (int i = 0; i < n; i++)
+                spectrum[i] *= H[i];
+
+            // 5. Inverse FFT → analytic signal
+            Fourier.Inverse(spectrum, FourierOptions.Matlab);
+
+            // 6. envelope = magnitude
+            double[] envelope = new double[n];
+            for (int i = 0; i < n; i++)
+                envelope[i] = spectrum[i].Magnitude;
+
+            return envelope;
+        }
         #endregion
     }
 

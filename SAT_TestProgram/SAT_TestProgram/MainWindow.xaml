@@ -339,6 +339,11 @@
                                 Margin="5,0,15,0"
                                 Padding="5,2"
                                 Click="BtnClearBScanData_Click"/>
+                        <Button x:Name="btnBScanEnvelope"
+                                Content="B Scan Envelope"
+                                Margin="5,0,15,0"
+                                Padding="5,2"
+                                Click="BtnBScanEnvelope_Click"/>
                         <CheckBox x:Name="chkShowLegendBScan"
                                 Content="범례 표시"
                                 Margin="15,0,15,0"

@@ -311,13 +311,37 @@ namespace SAT_TestProgram
                     plotBScan.Refresh();
 
                     string fileName = System.IO.Path.GetFileNameWithoutExtension(openFileDialog.FileName);
-                    await _dataManager.LoadDataAsync(openFileDialog.FileName);
-                    if (_dataManager.CurrentData != null)
+                    
+                    // B Scan 데이터를 2차원 배열로 로드
+                    int[,] bScanArray = ReadCsvToIntArray(openFileDialog.FileName);
+                    
+                    // DataManager의 BscanLine에 데이터 저장
+                    _dataManager.BscanLine = bScanArray;
+                    
+                    // B Scan 데이터를 DataModel로 변환하여 플롯에 표시
+                    // 첫 번째 행을 기본 데이터로 사용
+                    if (bScanArray.GetLength(0) > 0 && bScanArray.GetLength(1) > 0)
                     {
-                        _dataManager.CurrentData.FileName = fileName;
-                        _bScanData = _dataManager.CurrentData;
+                        float[] yData = new float[bScanArray.GetLength(1)];
+                        for (int i = 0; i < bScanArray.GetLength(1); i++)
+                        {
+                            yData[i] = bScanArray[0, i]; // 첫 번째 행 사용
+                        }
+                        
+                        _bScanData = new DataModel
+                        {
+                            FileName = fileName,
+                            YData = yData,
+                            DataNum = yData.Length
+                        };
                         
                         UpdateBScanPlot(_bScanData);
+                        
+                        System.Windows.MessageBox.Show(
+                            $"B Scan 데이터 로드 완료\n행: {bScanArray.GetLength(0)}, 열: {bScanArray.GetLength(1)}",
+                            "성공",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
                     }
                 }
                 catch (Exception ex)
@@ -336,6 +360,106 @@ namespace SAT_TestProgram
             _bScanData = null;
             plotBScan.Plot.Clear();
             plotBScan.Refresh();
+        }
+
+        private void BtnBScanEnvelope_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // B Scan 데이터가 로드되어 있는지 확인
+                if (_dataManager.BscanLine == null || _dataManager.BscanLine.Length == 0)
+                {
+                    System.Windows.MessageBox.Show("B Scan 데이터를 먼저 로드해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                int ImageCol = _dataManager.BscanLine.GetLength(0);
+                int frameCount = _dataManager.BscanLine.GetLength(1);
+                
+                // BscanEnvelope 배열 초기화
+                _dataManager.BscanEnvelope = new double[ImageCol, frameCount];
+
+                for (int w = 0; w < ImageCol; w++)
+                {
+                    // 현재 열의 데이터 추출 (세로 방향)
+                    int[] colData = new int[frameCount];
+                    for (int t = 0; t < frameCount; t++)
+                    {
+                        colData[t] = _dataManager.BscanLine[w, t];
+                    }
+
+                    // 포락선 계산
+                    double[] envelope = Models.SignalProcessor.ComputeEnvelope(colData);
+                    
+                    for (int t = 0; t < frameCount; t++)
+                    {
+                        _dataManager.BscanEnvelope[w, t] = envelope[t];
+                    }
+                }
+
+                // 첫 번째 열의 포락선을 플롯에 표시
+                if (ImageCol > 0)
+                {
+                    float[] envelopeData = new float[frameCount];
+                    for (int t = 0; t < frameCount; t++)
+                    {
+                        envelopeData[t] = (float)_dataManager.BscanEnvelope[0, t];
+                    }
+
+                    // B Scan 플롯 업데이트
+                    plotBScan.Plot.Clear();
+                    
+                    // 원본 데이터와 포락선 데이터를 함께 표시
+                    float[] originalData = new float[frameCount];
+                    for (int t = 0; t < frameCount; t++)
+                    {
+                        originalData[t] = _dataManager.BscanLine[t, 0];
+                    }
+
+                    // 인덱스 기반 X축 데이터 생성
+                    float[] indexAxis = new float[frameCount];
+                    for (int i = 0; i < frameCount; i++)
+                    {
+                        indexAxis[i] = i;
+                    }
+
+                    double[] xData = indexAxis.Select(x => (double)x).ToArray();
+                    double[] originalYData = originalData.Select(y => (double)y).ToArray();
+                    double[] envelopeYData = envelopeData.Select(y => (double)y).ToArray();
+
+                    // 원본 데이터 플롯
+                    plotBScan.Plot.AddScatter(xData, originalYData, label: "Original B Scan");
+                    
+                    // 포락선 데이터 플롯
+                    plotBScan.Plot.AddScatter(xData, envelopeYData, label: "Envelope");
+
+                    plotBScan.Plot.Title("B Scan Data with Envelope");
+                    plotBScan.Plot.XLabel("Frame Index");
+                    plotBScan.Plot.YLabel("Value");
+
+                    // 범례 표시
+                    if (chkShowLegendBScan?.IsChecked == true)
+                    {
+                        plotBScan.Plot.Legend();
+                    }
+
+                    plotBScan.Refresh();
+                }
+
+                System.Windows.MessageBox.Show(
+                    $"B Scan 포락선 계산 완료\nFrame Count: {frameCount}, Image Columns: {ImageCol}",
+                    "성공",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show(
+                    $"B Scan 포락선 계산 중 오류 발생: {ex.Message}",
+                    "오류",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
         }
 
         private void Algorithm_Click(object sender, RoutedEventArgs e)
@@ -3282,6 +3406,36 @@ namespace SAT_TestProgram
             {
                 System.Windows.MessageBox.Show($"거리 계산 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        /// <summary>
+        /// CSV 파일을 읽어서 2차원 정수 배열로 변환
+        /// </summary>
+        /// <param name="csvPath">CSV 파일 경로</param>
+        /// <returns>2차원 정수 배열</returns>
+        public static int[,] ReadCsvToIntArray(string csvPath)
+        {
+            var lines = File.ReadAllLines(csvPath).Skip(1).ToArray(); // 첫 줄 skip
+
+            if (lines.Length == 0)
+                throw new InvalidOperationException("데이터가 없습니다.");
+
+            int rowCount = lines.Length;
+            int colCount = lines[0].Split(',').Length - 1; // 첫 숫자 제외
+
+            int[,] result = new int[rowCount, colCount];
+
+            for (int y = 0; y < rowCount; y++)
+            {
+                var tokens = lines[y].Split(',').Skip(1).Select(int.Parse).ToArray();
+                if (tokens.Length != colCount)
+                    throw new FormatException($"라인 {y + 2}의 열 개수가 일치하지 않습니다."); // +2는 header 포함
+
+                for (int x = 0; x < colCount; x++)
+                    result[y, x] = tokens[x];
+            }
+
+            return result;
         }
 
         /// <summary>
