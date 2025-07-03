@@ -36,6 +36,12 @@ C:\Users\elly.kim\Desktop\SAT\SW\SAT_TestProgram\SAT_TestProgram\bin\Debug\ro\Xc
 C:\Users\elly.kim\Desktop\SAT\SW\SAT_TestProgram\SAT_TestProgram\bin\Debug\ru\Xceed.Wpf.AvalonDock.resources.dll
 C:\Users\elly.kim\Desktop\SAT\SW\SAT_TestProgram\SAT_TestProgram\bin\Debug\sv\Xceed.Wpf.AvalonDock.resources.dll
 C:\Users\elly.kim\Desktop\SAT\SW\SAT_TestProgram\SAT_TestProgram\bin\Debug\zh-Hans\Xceed.Wpf.AvalonDock.resources.dll
+C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\obj\Debug\SAT_TestProgram.exe.config
+C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\obj\Debug\MainWindow.g.cs
+C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\obj\Debug\App.g.cs
+C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\obj\Debug\SAT_TestProgram_MarkupCompile.cache
+C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\obj\Debug\SAT_TestProgram_MarkupCompile.lref
+C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\obj\Debug\SAT_TestProgram.csproj.AssemblyReference.cache
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\bin\Debug\SAT_TestProgram.exe.config
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\bin\Debug\SAT_TestProgram.exe
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\bin\Debug\SAT_TestProgram.pdb
@@ -44,11 +50,13 @@ C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestPr
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\bin\Debug\System.Drawing.Common.dll
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\bin\Debug\System.Numerics.Vectors.dll
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\bin\Debug\System.ValueTuple.dll
+C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\bin\Debug\MathNet.Numerics.dll
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\bin\Debug\Xceed.Wpf.AvalonDock.dll
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\bin\Debug\Xceed.Wpf.AvalonDock.Themes.Aero.dll
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\bin\Debug\Xceed.Wpf.AvalonDock.Themes.Metro.dll
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\bin\Debug\Xceed.Wpf.AvalonDock.Themes.VS2010.dll
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\bin\Debug\Xceed.Wpf.Toolkit.dll
+C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\bin\Debug\MathNet.Numerics.xml
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\bin\Debug\cs-CZ\Xceed.Wpf.AvalonDock.resources.dll
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\bin\Debug\de\Xceed.Wpf.AvalonDock.resources.dll
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\bin\Debug\es\Xceed.Wpf.AvalonDock.resources.dll
@@ -62,11 +70,6 @@ C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestPr
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\bin\Debug\ru\Xceed.Wpf.AvalonDock.resources.dll
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\bin\Debug\sv\Xceed.Wpf.AvalonDock.resources.dll
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\bin\Debug\zh-Hans\Xceed.Wpf.AvalonDock.resources.dll
-C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\obj\Debug\SAT_TestProgram.csproj.AssemblyReference.cache
-C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\obj\Debug\MainWindow.g.cs
-C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\obj\Debug\App.g.cs
-C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\obj\Debug\SAT_TestProgram_MarkupCompile.cache
-C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\obj\Debug\SAT_TestProgram_MarkupCompile.lref
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\obj\Debug\MainWindow.baml
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\obj\Debug\SAT_TestProgram.g.resources
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\obj\Debug\SAT_TestProgram.Properties.Resources.resources
@@ -75,6 +78,3 @@ C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestPr
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\obj\Debug\SAT_TestProgram.csproj.CopyComplete
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\obj\Debug\SAT_TestProgram.exe
 C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\obj\Debug\SAT_TestProgram.pdb
-C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\obj\Debug\SAT_TestProgram.exe.config
-C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\bin\Debug\MathNet.Numerics.dll
-C:\Users\elly.kim\Documents\GitHub\SAT_SignalAnalysis\SAT_TestProgram\SAT_TestProgram\bin\Debug\MathNet.Numerics.xml

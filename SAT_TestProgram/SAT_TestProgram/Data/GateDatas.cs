@@ -7,11 +7,8 @@ namespace SAT_TestProgram.Data
     /// 게이트 데이터를 관리하는 클래스
     /// 게이트의 인덱스, 시작/끝 위치, 거리 등의 정보를 저장
     /// </summary>
-    public class GateDatas : INotifyPropertyChanged
+    public class GateDatas : Gate, INotifyPropertyChanged
     {
-        private double _gateStart;
-        private double _gateStop;
-        private double _distance;
         private string _name;
         private int _maxIndexRaw; // Raw Signal에서 게이트 영역 내에서 가장 큰 Voltage를 가진 Index
         private int _maxIndexVoid; // Void Signal에서 게이트 영역 내에서 가장 큰 Voltage를 가진 Index
@@ -22,44 +19,39 @@ namespace SAT_TestProgram.Data
         private double _soundVelocity; // 개별 게이트의 음속 (m/s)
 
         /// <summary>
-        /// 게이트 시작 위치
+        /// 게이트 시작 위치 (double 타입으로 오버라이드)
         /// </summary>
-        public double GateStart
+        public new double Start
         {
-            get => _gateStart;
+            get => base.Start;
             set
             {
-                _gateStart = value;
-                CalculateDistance();
-                OnPropertyChanged(nameof(GateStart));
-            }
-        }
-
-        /// <summary>
-        /// 게이트 끝 위치
-        /// </summary>
-        public double GateStop
-        {
-            get => _gateStop;
-            set
-            {
-                _gateStop = value;
-                CalculateDistance();
-                OnPropertyChanged(nameof(GateStop));
-            }
-        }
-
-        /// <summary>
-        /// 게이트 거리 (GateStop - GateStart)
-        /// </summary>
-        public double Distance
-        {
-            get => _distance;
-            private set
-            {
-                _distance = value;
+                base.Start = (int)value;
+                OnPropertyChanged(nameof(Start));
                 OnPropertyChanged(nameof(Distance));
             }
+        }
+
+        /// <summary>
+        /// 게이트 끝 위치 (double 타입으로 오버라이드)
+        /// </summary>
+        public new double End
+        {
+            get => base.End;
+            set
+            {
+                base.End = (int)value;
+                OnPropertyChanged(nameof(End));
+                OnPropertyChanged(nameof(Distance));
+            }
+        }
+
+        /// <summary>
+        /// 게이트 거리 (End - Start)
+        /// </summary>
+        public new double Distance
+        {
+            get => Math.Abs(End - Start);
         }
 
         /// <summary>
@@ -197,34 +189,20 @@ namespace SAT_TestProgram.Data
         /// <summary>
         /// GateDatas 생성자
         /// </summary>
-        public GateDatas()
+        public GateDatas() : base()
         {
-            GateStart = 0;
-            GateStop = 0;
-            Distance = 0;
             Name = "Gate";
         }
 
         /// <summary>
         /// GateDatas 생성자 (매개변수 포함)
         /// </summary>
-        /// <param name="gateStart">게이트 시작 위치</param>
-        /// <param name="gateStop">게이트 끝 위치</param>
+        /// <param name="start">게이트 시작 위치</param>
+        /// <param name="end">게이트 끝 위치</param>
         /// <param name="name">게이트 이름</param>
-        public GateDatas(double gateStart, double gateStop, string name = "Gate")
+        public GateDatas(double start, double end, string name = "Gate") : base((int)start, (int)end)
         {
-            GateStart = gateStart;
-            GateStop = gateStop;
             Name = name;
-            CalculateDistance();
-        }
-
-        /// <summary>
-        /// 거리 계산
-        /// </summary>
-        private void CalculateDistance()
-        {
-            Distance = Math.Abs(GateStop - GateStart);
         }
 
         /// <summary>
@@ -233,7 +211,25 @@ namespace SAT_TestProgram.Data
         /// <returns>복사된 GateDatas 객체</returns>
         public GateDatas Clone()
         {
-            return new GateDatas(GateStart, GateStop, Name);
+            return new GateDatas(Start, End, Name);
+        }
+
+        /// <summary>
+        /// 시작 위치가 변경될 때 호출되는 메서드 (부모 클래스 오버라이드)
+        /// </summary>
+        protected override void OnStartChanged()
+        {
+            base.OnStartChanged();
+            // PropertyChanged 이벤트는 Start 속성 setter에서 처리됨
+        }
+
+        /// <summary>
+        /// 끝 위치가 변경될 때 호출되는 메서드 (부모 클래스 오버라이드)
+        /// </summary>
+        protected override void OnEndChanged()
+        {
+            base.OnEndChanged();
+            // PropertyChanged 이벤트는 End 속성 setter에서 처리됨
         }
 
         /// <summary>

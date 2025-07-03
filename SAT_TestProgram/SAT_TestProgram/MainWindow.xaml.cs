@@ -1655,8 +1655,8 @@ namespace SAT_TestProgram
                 // 새로운 게이트 데이터 생성 (Gate Start/Stop만 포함)
                 var gateData = new GateDatas
                 {
-                    GateStart = double.Parse(txtGateStart.Text),
-                    GateStop = double.Parse(txtGateStop.Text),
+                    Start = double.Parse(txtGateStart.Text),
+                    End = double.Parse(txtGateStop.Text),
                     Name = $"Gate_{_dataManager.GateDataCount + 1}"
                 };
 
@@ -1732,8 +1732,8 @@ namespace SAT_TestProgram
                 // 게이트 데이터 수정 (Gate Start/Stop만 포함)
                 var gateData = new GateDatas
                 {
-                    GateStart = double.Parse(txtGateStart.Text),
-                    GateStop = double.Parse(txtGateStop.Text),
+                    Start = double.Parse(txtGateStart.Text),
+                    End = double.Parse(txtGateStop.Text),
                     Name = $"Gate_{_selectedGateIndex + 1}"
                 };
 
@@ -1893,8 +1893,8 @@ namespace SAT_TestProgram
 
                     var gateData = new GateDatas
                     {
-                        GateStart = gateStart,
-                        GateStop = gateStop,
+                        Start = gateStart,
+                        End = gateStop,
                         Name = $"Gate_{i + 1}"
                     };
 
@@ -1976,8 +1976,8 @@ namespace SAT_TestProgram
                     txtIndexStop.Text = _dataManager.IndexStop.ToString();
                     
                     // Gate Start/Stop은 선택된 게이트에서 가져오기
-                    txtGateStart.Text = selectedGate.GateStart.ToString("F2");
-                    txtGateStop.Text = selectedGate.GateStop.ToString("F2");
+                    txtGateStart.Text = selectedGate.Start.ToString("F2");
+                    txtGateStop.Text = selectedGate.End.ToString("F2");
                     
                     // 선택된 게이트의 음속 값을 UI에 표시
                     txtSoundVelocity.Text = selectedGate.SoundVelocity.ToString("F0");
@@ -2179,7 +2179,7 @@ namespace SAT_TestProgram
                 var axisLimits = plot.GetAxisLimits();
 
                 // 게이트 시작점에 수직선 추가 (범례에 표시하지 않음)
-                var startLine = plot.AddVerticalLine(gateData.GateStart, 
+                var startLine = plot.AddVerticalLine(gateData.Start, 
                     color, 
                     2, 
                     ScottPlot.LineStyle.Solid, 
@@ -2187,7 +2187,7 @@ namespace SAT_TestProgram
                 _gateVisualElements.Add(startLine);
 
                 // 게이트 끝점에 수직선 추가 (범례에 표시하지 않음)
-                var stopLine = plot.AddVerticalLine(gateData.GateStop, 
+                var stopLine = plot.AddVerticalLine(gateData.End, 
                     color, 
                     2, 
                     ScottPlot.LineStyle.Solid, 
@@ -2223,7 +2223,7 @@ namespace SAT_TestProgram
                 }
 
                 // 게이트 구간에 반투명 영역 추가 (ScottPlot 4.x에서는 다른 방법 사용)
-                var rectX = new double[] { gateData.GateStart, gateData.GateStart, gateData.GateStop, gateData.GateStop };
+                var rectX = new double[] { gateData.Start, gateData.Start, gateData.End, gateData.End };
                 var rectY = new double[] { axisLimits.YMin, axisLimits.YMax, axisLimits.YMax, axisLimits.YMin };
                 
                 var areaColor = System.Drawing.Color.FromArgb(30, color.R, color.G, color.B);
@@ -2231,7 +2231,7 @@ namespace SAT_TestProgram
                 _gateVisualElements.Add(gateArea);
 
                 // 거리 정보를 텍스트로 표시
-                var centerX = gateData.GateStart + (gateData.GateStop - gateData.GateStart) / 2;
+                var centerX = gateData.Start + (gateData.End - gateData.Start) / 2;
                 var textY = axisLimits.YMax * 0.95;
                 var distanceText = plot.AddText(
                     $"Gate {i + 1}: {gateData.Distance:F2}", 
@@ -2242,7 +2242,7 @@ namespace SAT_TestProgram
                 // 게이트 번호를 시작점에 표시
                 var gateNumberText = plot.AddText(
                     $"G{i + 1}", 
-                    gateData.GateStart, 
+                    gateData.Start, 
                     axisLimits.YMax * 0.85);
                 _gateVisualElements.Add(gateNumberText);
             }
@@ -2357,7 +2357,7 @@ namespace SAT_TestProgram
                     for (int i = 0; i < gateDatas.Count; i++)
                     {
                         var gate = gateDatas[i];
-                        lines.Add($"{gate.GateStart:F2}, {gate.GateStop:F2}");
+                        lines.Add($"{gate.Start:F2}, {gate.End:F2}");
                     }
                 }
 
@@ -2469,8 +2469,8 @@ namespace SAT_TestProgram
                     // 게이트 데이터 생성 및 추가
                     var gateData = new GateDatas
                     {
-                        GateStart = gateStart,
-                        GateStop = gateStop,
+                        Start = gateStart,
+                        End = gateStop,
                         Name = $"Gate_{i - 1}" // 2번째 줄부터 시작하므로 i-1
                     };
 
@@ -2626,10 +2626,10 @@ namespace SAT_TestProgram
                 return -1;
             }
 
-            int startIndex = (int)Math.Max(0, Math.Floor(gateData.GateStart));
-            int stopIndex = (int)Math.Min(signalData.Length - 1, Math.Ceiling(gateData.GateStop));
+            int startIndex = (int)Math.Max(0, Math.Floor(gateData.Start));
+            int stopIndex = (int)Math.Min(signalData.Length - 1, Math.Ceiling(gateData.End));
 
-            System.Diagnostics.Debug.WriteLine($"CalculateMaxIndexInGate: Gate({gateData.GateStart:F2} ~ {gateData.GateStop:F2}) -> Index({startIndex} ~ {stopIndex})");
+            System.Diagnostics.Debug.WriteLine($"CalculateMaxIndexInGate: Gate({gateData.Start:F2} ~ {gateData.End:F2}) -> Index({startIndex} ~ {stopIndex})");
 
             if (startIndex >= stopIndex || startIndex >= signalData.Length) 
             {
@@ -2760,7 +2760,7 @@ namespace SAT_TestProgram
                 // 각 게이트의 MaxIndex 계산
                 foreach (var gateData in gateDatas)
                 {
-                    System.Diagnostics.Debug.WriteLine($"\n--- Gate: {gateData.Name} ({gateData.GateStart:F2} ~ {gateData.GateStop:F2}) ---");
+                    System.Diagnostics.Debug.WriteLine($"\n--- Gate: {gateData.Name} ({gateData.Start:F2} ~ {gateData.End:F2}) ---");
                     
                     // Raw Signal MaxIndex 계산
                     if (rawSignalData != null)
@@ -3016,7 +3016,7 @@ namespace SAT_TestProgram
                     double soundVelocity = currentGate.SoundVelocity;
                     
                     System.Diagnostics.Debug.WriteLine($"\n--- Gate {i + 1} ---");
-                    System.Diagnostics.Debug.WriteLine($"GateStart: {currentGate.GateStart}, GateStop: {currentGate.GateStop}");
+                    System.Diagnostics.Debug.WriteLine($"GateStart: {currentGate.Start}, GateStop: {currentGate.End}");
                     System.Diagnostics.Debug.WriteLine($"MaxIndexRaw: {currentGate.MaxIndexRaw}, MaxIndexVoid: {currentGate.MaxIndexVoid}");
                     System.Diagnostics.Debug.WriteLine($"SoundVelocity: {soundVelocity} m/s");
                     
@@ -3179,7 +3179,7 @@ namespace SAT_TestProgram
                     double soundVelocity = currentGate.SoundVelocity;
                     
                     System.Diagnostics.Debug.WriteLine($"\n--- Gate {i + 1} ---");
-                    System.Diagnostics.Debug.WriteLine($"GateStart: {currentGate.GateStart}, GateStop: {currentGate.GateStop}");
+                    System.Diagnostics.Debug.WriteLine($"GateStart: {currentGate.Start}, GateStop: {currentGate.End}");
                     System.Diagnostics.Debug.WriteLine($"MaxIndexRaw: {currentGate.MaxIndexRaw}, MaxIndexVoid: {currentGate.MaxIndexVoid}");
                     System.Diagnostics.Debug.WriteLine($"SoundVelocity: {soundVelocity} m/s");
                     
