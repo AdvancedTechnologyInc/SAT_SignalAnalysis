@@ -414,8 +414,8 @@
                                  SelectionChanged="DgGateList_SelectionChanged"
                                  Height="150">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="Gate Start" Binding="{Binding GateStart, StringFormat=N2}" Width="80"/>
-                                <DataGridTextColumn Header="Gate Stop" Binding="{Binding GateStop, StringFormat=N2}" Width="80"/>
+                                <DataGridTextColumn Header="Gate Start" Binding="{Binding Start, StringFormat=N2}" Width="80"/>
+                                <DataGridTextColumn Header="Gate Stop" Binding="{Binding End, StringFormat=N2}" Width="80"/>
                                 <DataGridTextColumn Header="Distance" Binding="{Binding Distance, StringFormat=N2}" Width="80"/>
                                 <DataGridTextColumn Header="Raw Max" Binding="{Binding MaxIndexRaw}" Width="70"/>
                                 <DataGridTextColumn Header="Void Max" Binding="{Binding MaxIndexVoid}" Width="70"/>
