@@ -413,7 +413,7 @@ namespace SAT_TestProgram
                     float[] originalData = new float[frameCount];
                     for (int t = 0; t < frameCount; t++)
                     {
-                        originalData[t] = _dataManager.BscanLine[t, 0];
+                        originalData[t] = _dataManager.BscanLine[0, t];
                     }
 
                     // 인덱스 기반 X축 데이터 생성
@@ -456,6 +456,52 @@ namespace SAT_TestProgram
             {
                 System.Windows.MessageBox.Show(
                     $"B Scan 포락선 계산 중 오류 발생: {ex.Message}",
+                    "오류",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
+        private void BtnSaveBScanBitmap_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // B Scan Envelope 데이터가 있는지 확인
+                if (_dataManager.BscanEnvelope == null || _dataManager.BscanEnvelope.Length == 0)
+                {
+                    System.Windows.MessageBox.Show("B Scan Envelope 데이터가 없습니다. 먼저 B Scan Envelope를 계산해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                // 파일 저장 다이얼로그
+                Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog
+                {
+                    Filter = "PNG Image (*.png)|*.png|JPEG Image (*.jpg)|*.jpg|BMP Image (*.bmp)|*.bmp|All Files (*.*)|*.*",
+                    FilterIndex = 1,
+                    DefaultExt = "png",
+                    FileName = "BScanEnvelope"
+                };
+
+                if (saveFileDialog.ShowDialog() == true)
+                {
+                    // 데이터 배열 크기 사용
+                    int width = _dataManager.BscanEnvelope.GetLength(0);
+                    int height = _dataManager.BscanEnvelope.GetLength(1);
+
+                    // 비트맵 저장 (데이터 크기 그대로 사용)
+                    _dataManager.SaveBscanEnvelopeAsBitmap(saveFileDialog.FileName);
+
+                    System.Windows.MessageBox.Show(
+                        $"B Scan Envelope 비트맵 저장 완료\n파일: {saveFileDialog.FileName}\n크기: {width}x{height}",
+                        "성공",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show(
+                    $"비트맵 저장 중 오류 발생: {ex.Message}",
                     "오류",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);

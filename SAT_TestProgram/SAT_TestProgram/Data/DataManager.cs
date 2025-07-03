@@ -100,6 +100,76 @@ namespace SAT_TestProgram.Data
         public double[,] BscanEnvelope = new double[,] { };
 
         /// <summary>
+        /// B Scan Envelope를 비트맵으로 변환하여 저장
+        /// </summary>
+        /// <param name="filePath">저장할 파일 경로</param>
+        /// <param name="width">이미지 너비</param>
+        /// <param name="height">이미지 높이</param>
+        public void SaveBscanEnvelopeAsBitmap(string filePath, int width = -1, int height = -1)
+        {
+            if (BscanEnvelope == null || BscanEnvelope.Length == 0)
+                throw new InvalidOperationException("BscanEnvelope 데이터가 없습니다.");
+
+            int rows = BscanEnvelope.GetLength(0);
+            int cols = BscanEnvelope.GetLength(1);
+
+            // 크기가 지정되지 않은 경우 데이터 크기 사용
+            if (width <= 0) width = rows;
+            if (height <= 0) height = cols;
+
+            // 데이터의 최대/최소값 찾기
+            double minVal = double.MaxValue;
+            double maxVal = double.MinValue;
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < cols; j++)
+                {
+                    if (BscanEnvelope[i, j] < minVal) minVal = BscanEnvelope[i, j];
+                    if (BscanEnvelope[i, j] > maxVal) maxVal = BscanEnvelope[i, j];
+                }
+            }
+
+            // 값 범위가 0인 경우 처리
+            if (maxVal == minVal)
+            {
+                maxVal = minVal + 1;
+            }
+
+            // 비트맵 생성
+            using (var bitmap = new System.Drawing.Bitmap(width, height))
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    for (int x = 0; x < width; x++)
+                    {
+                        // 데이터 인덱스 계산 (스케일링)
+                        int dataX = (int)((double)x / width * rows);
+                        int dataY = (int)((double)y / height * cols);
+                        
+                        // 범위 체크
+                        if (dataX >= rows) dataX = rows - 1;
+                        if (dataY >= cols) dataY = cols - 1;
+
+                        // 값 정규화 (0-255)
+                        double normalizedValue = (BscanEnvelope[dataX, dataY] - minVal) / (maxVal - minVal);
+                        int grayValue = (int)(normalizedValue * 255);
+                        
+                        // 범위 제한
+                        if (grayValue < 0) grayValue = 0;
+                        if (grayValue > 255) grayValue = 255;
+
+                        // 그레이스케일 색상 생성
+                        var color = System.Drawing.Color.FromArgb(grayValue, grayValue, grayValue);
+                        bitmap.SetPixel(x, y, color);
+                    }
+                }
+
+                // 파일 저장
+                bitmap.Save(filePath, System.Drawing.Imaging.ImageFormat.Png);
+            }
+        }
+
+        /// <summary>
         /// 게이트 데이터 컬렉션
         /// </summary>
         public ObservableCollection<GateDatas> GateDatas
