@@ -491,6 +491,9 @@ namespace SAT_TestProgram
                     // 비트맵 저장 (데이터 크기 그대로 사용)
                     _dataManager.SaveBscanEnvelopeAsBitmap(saveFileDialog.FileName);
 
+                    // B Scan 플롯에 2D 히트맵으로 BscanEnvelope 데이터 표시
+                    UpdateBScanPlotWithHeatmap();
+
                     System.Windows.MessageBox.Show(
                         $"B Scan Envelope 비트맵 저장 완료\n파일: {saveFileDialog.FileName}\n크기: {width}x{height}",
                         "성공",
@@ -3485,6 +3488,83 @@ namespace SAT_TestProgram
         }
 
         /// <summary>
+        /// B Scan Envelope 데이터를 2D 히트맵으로 표시
+        /// </summary>
+        private void UpdateBScanPlotWithHeatmap()
+        {
+            try
+            {
+                if (_dataManager.BscanEnvelope == null || _dataManager.BscanEnvelope.Length == 0)
+                {
+                    System.Windows.MessageBox.Show("B Scan Envelope 데이터가 없습니다.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                int frameCount = _dataManager.BscanEnvelope.GetLength(1);
+                int imageCol = _dataManager.BscanEnvelope.GetLength(0);
+
+                // B Scan 플롯 초기화
+                plotBScan.Plot.Clear();
+
+                // 2D 히트맵 데이터 준비
+                double[,] heatmapData = new double[frameCount, imageCol];
+                
+                // BscanEnvelope 데이터를 히트맵 형식으로 변환
+                for (int frame = 0; frame < frameCount; frame++)
+                {
+                    for (int col = 0; col < imageCol; col++)
+                    {
+                        heatmapData[frame, col] = _dataManager.BscanEnvelope[col, frame];
+                    }
+                }
+
+                // 히트맵 추가
+                var heatmap = plotBScan.Plot.AddHeatmap(heatmapData);
+                
+                // 축 설정
+                plotBScan.Plot.Title("B Scan Envelope Heatmap");
+                plotBScan.Plot.XLabel("Image Column");
+                plotBScan.Plot.YLabel("Frame Count");
+
+                // 컬러바 추가
+                plotBScan.Plot.AddColorbar(heatmap);
+
+                // 범례 표시
+                if (chkShowLegendBScan?.IsChecked == true)
+                {
+                    plotBScan.Plot.Legend();
+                }
+
+                // 히트맵 자동 스케일 조절 후 10% 여백 추가
+                plotBScan.Plot.AxisAuto();
+                
+                // 현재 축 범위 가져오기
+                var xLimits = plotBScan.Plot.GetAxisLimits();
+                
+                // X축과 Y축에 10% 여백 추가
+                double xRange = xLimits.XMax - xLimits.XMin;
+                double yRange = xLimits.YMax - xLimits.YMin;
+                double xPadding = xRange * 0.1;
+                double yPadding = yRange * 0.1;
+                
+                // 새로운 축 범위 설정
+                plotBScan.Plot.SetAxisLimits(
+                    xLimits.XMin - xPadding,
+                    xLimits.XMax + xPadding,
+                    xLimits.YMin - yPadding,
+                    xLimits.YMax + yPadding
+                );
+
+                // 플롯 새로고침
+                plotBScan.Refresh();
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"히트맵 업데이트 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
         /// B Scan 플롯에 데이터를 표시
         /// </summary>
         /// <param name="data">표시할 데이터</param>
@@ -3531,25 +3611,8 @@ namespace SAT_TestProgram
                     plotBScan.Plot.Legend(false);
                 }
 
-                // Update axis limits
-                if (data.YData.Length > 0)
-                {
-                    double xMin = 0;
-                    double xMax = data.YData.Length - 1;
-                    double yMin = data.YData.Min();
-                    double yMax = data.YData.Max();
-
-                    // Add some padding
-                    double xPadding = (xMax - xMin) * 0.05;
-                    double yPadding = (yMax - yMin) * 0.05;
-
-                    plotBScan.Plot.SetAxisLimits(
-                        xMin: xMin - xPadding,
-                        xMax: xMax + xPadding,
-                        yMin: yMin - yPadding,
-                        yMax: yMax + yPadding
-                    );
-                }
+                // Auto-scale to fit all data
+                plotBScan.Plot.AxisAuto();
 
                 // Refresh the plot
                 plotBScan.Refresh();
