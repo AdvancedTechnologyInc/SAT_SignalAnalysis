@@ -511,6 +511,71 @@ namespace SAT_TestProgram
             }
         }
 
+
+
+        /// <summary>
+        /// B Scan 히트맵에 게이트 영역을 표시
+        /// </summary>
+        /// <param name="selectedGate">선택된 게이트 (null이면 모든 게이트 표시)</param>
+        private void UpdateBScanGateDisplay(GateDatas selectedGate = null)
+        {
+            try
+            {
+                if (_dataManager.BscanEnvelope == null || _dataManager.BscanEnvelope.Length == 0)
+                    return;
+
+                // 기존 게이트 표시 제거 (게이트 표시용 ScatterPlot만 제거)
+                var existingPlottables = plotBScan.Plot.GetPlottables().ToList();
+                foreach (var plottable in existingPlottables)
+                {
+                    if (plottable is ScottPlot.Plottable.ScatterPlot scatterPlot && 
+                        scatterPlot.Label != null && scatterPlot.Label.StartsWith("Gate_"))
+                    {
+                        plotBScan.Plot.Remove(plottable);
+                    }
+                }
+
+                // 각 게이트에 대해 Frame 위치에 수직선 표시
+                foreach (var gateData in _dataManager.GateDatas)
+                {
+                    if (gateData.FrameStart >= 0 && gateData.FrameEnd >= 0)
+                    {
+                        // 선택된 게이트인지 확인
+                        bool isSelected = selectedGate != null && gateData == selectedGate;
+                        
+                        var color = isSelected ? System.Drawing.Color.Yellow : System.Drawing.Color.Red;
+                        var lineWidth = isSelected ? 3 : 2;
+
+                        // Frame Start 위치에 수평선
+                        var frameStartLine = new ScottPlot.Plottable.ScatterPlot(
+                            new double[] { gateData.Start, gateData.End },
+                            new double[] { gateData.FrameStart, gateData.FrameStart });
+                        frameStartLine.Color = color;
+                        frameStartLine.LineWidth = lineWidth;
+                        frameStartLine.Label = $"Gate_{gateData.Name}_Start";
+                        plotBScan.Plot.Add(frameStartLine);
+
+                        // Frame End 위치에 수평선
+                        var frameEndLine = new ScottPlot.Plottable.ScatterPlot(
+                            new double[] { gateData.Start, gateData.End },
+                            new double[] { gateData.FrameEnd, gateData.FrameEnd });
+                        frameEndLine.Color = color;
+                        frameEndLine.LineWidth = lineWidth;
+                        frameEndLine.Label = $"Gate_{gateData.Name}_End";
+                        plotBScan.Plot.Add(frameEndLine);
+                    }
+                }
+
+                plotBScan.Refresh();
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"게이트 표시 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+
+
         private void Algorithm_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
@@ -1765,6 +1830,7 @@ namespace SAT_TestProgram
 
                 // Bind DataGrid to DataManager's GateDatas
                 dgGateList.ItemsSource = _dataManager.GateDatas;
+                dgGateList.SelectionChanged += DgGateList_SelectionChanged;
 
                 // Subscribe to gate data changes
                 _dataManager.OnGateDataChanged += OnGateDataChanged;
@@ -1839,6 +1905,16 @@ namespace SAT_TestProgram
                     gateData.SoundVelocity = soundVelocity;
                 }
 
+                // B Scan Frame 정보 설정
+                if (int.TryParse(txtFrameStart.Text, out int frameStart))
+                {
+                    gateData.FrameStart = frameStart;
+                }
+                if (int.TryParse(txtFrameEnd.Text, out int frameEnd))
+                {
+                    gateData.FrameEnd = frameEnd;
+                }
+
                 // DataManager에 추가
                 _dataManager.AddGateData(gateData);
 
@@ -1861,6 +1937,9 @@ namespace SAT_TestProgram
                     // 게이트 시각화만 업데이트
                     VisualizeGates();
                 }
+
+                // B Scan 히트맵 업데이트
+                UpdateBScanGateDisplay();
 
                 System.Windows.MessageBox.Show("게이트가 성공적으로 추가되었습니다.", "성공", MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -1916,6 +1995,16 @@ namespace SAT_TestProgram
                     gateData.SoundVelocity = soundVelocity;
                 }
 
+                // B Scan Frame 정보 설정
+                if (int.TryParse(txtFrameStart.Text, out int frameStart))
+                {
+                    gateData.FrameStart = frameStart;
+                }
+                if (int.TryParse(txtFrameEnd.Text, out int frameEnd))
+                {
+                    gateData.FrameEnd = frameEnd;
+                }
+
                 // DataManager에서 수정
                 _dataManager.UpdateGateData(_selectedGateIndex, gateData);
 
@@ -1939,6 +2028,9 @@ namespace SAT_TestProgram
                     // 게이트 시각화만 업데이트
                     VisualizeGates();
                 }
+
+                // B Scan 히트맵 업데이트
+                UpdateBScanGateDisplay();
 
                 System.Windows.MessageBox.Show("게이트가 성공적으로 수정되었습니다.", "성공", MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -2155,7 +2247,19 @@ namespace SAT_TestProgram
                     // 선택된 게이트의 음속 값을 UI에 표시
                     txtSoundVelocity.Text = selectedGate.SoundVelocity.ToString("F0");
 
+                    // B Scan Frame 정보를 UI에 표시
+                    txtFrameStart.Text = selectedGate.FrameStart.ToString();
+                    txtFrameEnd.Text = selectedGate.FrameEnd.ToString();
+
                     UpdateGateButtonStates();
+
+                    // B Scan 히트맵에서 선택된 게이트 하이라이트
+                    UpdateBScanGateDisplay(selectedGate);
+                }
+                else
+                {
+                    // 선택이 해제되면 모든 게이트 표시
+                    UpdateBScanGateDisplay();
                 }
             }
             catch (Exception ex)
@@ -2247,6 +2351,8 @@ namespace SAT_TestProgram
             txtGateStart.Text = "0.0";
             txtGateStop.Text = "1.0";
             txtGateNum.Text = "5";
+            txtFrameStart.Text = "0";
+            txtFrameEnd.Text = "100";
         }
 
         /// <summary>
@@ -3535,25 +3641,20 @@ namespace SAT_TestProgram
                     plotBScan.Plot.Legend();
                 }
 
-                // 히트맵 자동 스케일 조절 후 10% 여백 추가
-                plotBScan.Plot.AxisAuto();
+                // 데이터 배열 크기의 10% 큰 값으로 축 범위 고정
+                double xPadding = imageCol * 0.1;
+                double yPadding = frameCount * 0.1;
                 
-                // 현재 축 범위 가져오기
-                var xLimits = plotBScan.Plot.GetAxisLimits();
-                
-                // X축과 Y축에 10% 여백 추가
-                double xRange = xLimits.XMax - xLimits.XMin;
-                double yRange = xLimits.YMax - xLimits.YMin;
-                double xPadding = xRange * 0.1;
-                double yPadding = yRange * 0.1;
-                
-                // 새로운 축 범위 설정
+                // 축 범위 설정 (데이터 크기 + 10% 여백)
                 plotBScan.Plot.SetAxisLimits(
-                    xLimits.XMin - xPadding,
-                    xLimits.XMax + xPadding,
-                    xLimits.YMin - yPadding,
-                    xLimits.YMax + yPadding
+                    -xPadding,
+                    imageCol + xPadding,
+                    -yPadding,
+                    frameCount + yPadding
                 );
+
+                // 히트맵에 게이트 영역 표시
+                UpdateBScanGateDisplay();
 
                 // 플롯 새로고침
                 plotBScan.Refresh();

@@ -17,6 +17,8 @@ namespace SAT_TestProgram.Data
         private double _calculatedDistanceRaw; // Raw Signal에서 계산된 거리 (μm)
         private double _calculatedDistanceVoid; // Void Signal에서 계산된 거리 (μm)
         private double _soundVelocity; // 개별 게이트의 음속 (m/s)
+        private int _frameStart; // B Scan에서 사용할 Frame 시작 인덱스
+        private int _frameEnd; // B Scan에서 사용할 Frame 끝 인덱스
 
         /// <summary>
         /// 게이트 시작 위치 (double 타입으로 오버라이드)
@@ -183,6 +185,32 @@ namespace SAT_TestProgram.Data
             {
                 _soundVelocity = value;
                 OnPropertyChanged(nameof(SoundVelocity));
+            }
+        }
+
+        /// <summary>
+        /// B Scan에서 사용할 Frame 시작 인덱스
+        /// </summary>
+        public int FrameStart
+        {
+            get => _frameStart;
+            set
+            {
+                _frameStart = value;
+                OnPropertyChanged(nameof(FrameStart));
+            }
+        }
+
+        /// <summary>
+        /// B Scan에서 사용할 Frame 끝 인덱스
+        /// </summary>
+        public int FrameEnd
+        {
+            get => _frameEnd;
+            set
+            {
+                _frameEnd = value;
+                OnPropertyChanged(nameof(FrameEnd));
             }
         }
 
