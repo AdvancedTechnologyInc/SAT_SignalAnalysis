@@ -215,6 +215,13 @@
                                     Margin="5,0,15,0" 
                                     IsChecked="True"
                                     VerticalAlignment="Center"/>
+                            <TextBlock Text="A Scan 선택:" 
+                                     VerticalAlignment="Center" 
+                                     Margin="15,0,5,0"/>
+                            <ComboBox x:Name="cmbRawAScanSelection"
+                                     Width="120"
+                                     Margin="5,0,15,0"
+                                     SelectionChanged="CmbRawAScanSelection_SelectionChanged"/>
                             <CheckBox x:Name="chkContinuousProcessingUpper"
                                     Content="연속 처리"
                                     Margin="5,0,15,0"
@@ -271,6 +278,13 @@
                                     Margin="5,0,15,0" 
                                     IsChecked="True"
                                     VerticalAlignment="Center"/>
+                            <TextBlock Text="A Scan 선택:" 
+                                     VerticalAlignment="Center" 
+                                     Margin="15,0,5,0"/>
+                            <ComboBox x:Name="cmbVoidAScanSelection"
+                                     Width="120"
+                                     Margin="5,0,15,0"
+                                     SelectionChanged="CmbVoidAScanSelection_SelectionChanged"/>
                             <CheckBox x:Name="chkContinuousProcessingLower"
                                     Content="연속 처리"
                                     Margin="5,0,15,0"

@@ -318,6 +318,9 @@ namespace SAT_TestProgram
                     // DataManager의 BscanLine에 데이터 저장
                     _dataManager.BscanLine = bScanArray;
                     
+                    // A Scan 선택 콤보박스 업데이트
+                    UpdateAScanComboBoxes(bScanArray);
+                    
                     // B Scan 데이터를 DataModel로 변환하여 플롯에 표시
                     // 첫 번째 행을 기본 데이터로 사용
                     if (bScanArray.GetLength(0) > 0 && bScanArray.GetLength(1) > 0)
@@ -358,8 +361,13 @@ namespace SAT_TestProgram
         private void BtnClearBScanData_Click(object sender, RoutedEventArgs e)
         {
             _bScanData = null;
+            _dataManager.BscanLine = new int[,] { };
             plotBScan.Plot.Clear();
             plotBScan.Refresh();
+            
+            // A Scan 콤보박스 클리어
+            cmbRawAScanSelection.Items.Clear();
+            cmbVoidAScanSelection.Items.Clear();
         }
 
         private void BtnBScanEnvelope_Click(object sender, RoutedEventArgs e)
@@ -948,7 +956,7 @@ namespace SAT_TestProgram
         {
             try
             {
-                if (_dataManager.CurrentData?.Volt != null)
+                if (_dataManager.CurrentData?.Volt != null && _dataManager.CurrentData.Volt.Length > 0)
                 {
                     plotPreview.Plot.Clear();
 
@@ -988,7 +996,8 @@ namespace SAT_TestProgram
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show($"미리보기 업데이트 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                // 미리보기 업데이트 오류는 조용히 처리 (사용자에게 오류 메시지 표시하지 않음)
+                System.Diagnostics.Debug.WriteLine($"미리보기 업데이트 중 오류 발생: {ex.Message}");
             }
         }
 
@@ -3723,6 +3732,128 @@ namespace SAT_TestProgram
                 System.Windows.MessageBox.Show($"B Scan 플롯 업데이트 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+        /// <summary>
+        /// A Scan 선택 콤보박스들을 업데이트
+        /// </summary>
+        /// <param name="bScanArray">B Scan 데이터 배열</param>
+        private void UpdateAScanComboBoxes(int[,] bScanArray)
+        {
+            try
+            {
+                cmbRawAScanSelection.Items.Clear();
+                cmbVoidAScanSelection.Items.Clear();
+                
+                if (bScanArray == null || bScanArray.Length == 0)
+                    return;
+
+                int rowCount = bScanArray.GetLength(0);
+                
+                // 각 행을 A Scan으로 추가
+                for (int i = 0; i < rowCount; i++)
+                {
+                    string aScanName = $"A Scan {i + 1}";
+                    cmbRawAScanSelection.Items.Add(aScanName);
+                    cmbVoidAScanSelection.Items.Add(aScanName);
+                }
+                
+                // 첫 번째 A Scan을 기본 선택
+                if (cmbRawAScanSelection.Items.Count > 0)
+                {
+                    cmbRawAScanSelection.SelectedIndex = 0;
+                }
+                if (cmbVoidAScanSelection.Items.Count > 0)
+                {
+                    cmbVoidAScanSelection.SelectedIndex = 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"A Scan 콤보박스 업데이트 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Raw Signal A Scan 선택 콤보박스 변경 이벤트
+        /// </summary>
+        private void CmbRawAScanSelection_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            try
+            {
+                if (cmbRawAScanSelection.SelectedIndex >= 0 && _dataManager.BscanLine != null)
+                {
+                    int selectedRow = cmbRawAScanSelection.SelectedIndex;
+                    int colCount = _dataManager.BscanLine.GetLength(1);
+                    
+                    // 선택된 A Scan 데이터 추출
+                    float[] yData = new float[colCount];
+                    for (int i = 0; i < colCount; i++)
+                    {
+                        yData[i] = _dataManager.BscanLine[selectedRow, i];
+                    }
+                    
+                    // Raw Signal 데이터로 설정
+                    _rawSignalData = new DataModel
+                    {
+                        FileName = $"A Scan {selectedRow + 1} (Raw)",
+                        YData = yData,
+                        DataNum = yData.Length
+                    };
+                    
+                    _dataManager.SetRawSignalData(_rawSignalData);
+                    
+                    // CurrentData 설정 후 플롯 업데이트
+                    _dataManager.SetCurrentData(_rawSignalData);
+                    UpdatePlots(_rawSignalData);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Raw Signal A Scan 선택 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Void Signal A Scan 선택 콤보박스 변경 이벤트
+        /// </summary>
+        private void CmbVoidAScanSelection_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            try
+            {
+                if (cmbVoidAScanSelection.SelectedIndex >= 0 && _dataManager.BscanLine != null)
+                {
+                    int selectedRow = cmbVoidAScanSelection.SelectedIndex;
+                    int colCount = _dataManager.BscanLine.GetLength(1);
+                    
+                    // 선택된 A Scan 데이터 추출
+                    float[] yData = new float[colCount];
+                    for (int i = 0; i < colCount; i++)
+                    {
+                        yData[i] = _dataManager.BscanLine[selectedRow, i];
+                    }
+                    
+                    // Void Signal 데이터로 설정
+                    _voidSignalData = new DataModel
+                    {
+                        FileName = $"A Scan {selectedRow + 1} (Void)",
+                        YData = yData,
+                        DataNum = yData.Length
+                    };
+                    
+                    _dataManager.SetVoidSignalData(_voidSignalData);
+                    
+                    // CurrentData 설정 후 플롯 업데이트
+                    _dataManager.SetCurrentData(_voidSignalData);
+                    UpdatePlots(_voidSignalData);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Void Signal A Scan 선택 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+
     }
 }
 
