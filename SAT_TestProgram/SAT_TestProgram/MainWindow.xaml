@@ -495,6 +495,12 @@
                             <Button x:Name="btnSaveGate" Content="Save" Width="60" Margin="5,0" Click="BtnSaveGate_Click"/>
                             <Button x:Name="btnLoadGate" Content="Load" Width="60" Margin="5,0" Click="BtnLoadGate_Click"/>
                         </StackPanel>
+                        <!-- FFT Control Buttons -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,5" Grid.Row="1">
+                            <Button x:Name="btnRawFFT" Content="Raw FFT" Width="80" Margin="5,0" Click="BtnRawFFT_Click" ToolTip="Raw Signal 게이트 구간 FFT 분석"/>
+                            <Button x:Name="btnVoidFFT" Content="Void FFT" Width="80" Margin="5,0" Click="BtnVoidFFT_Click" ToolTip="Void Signal 게이트 구간 FFT 분석"/>
+                            <Button x:Name="btnClearFFT" Content="Clear FFT" Width="80" Margin="5,0" Click="BtnClearFFT_Click" ToolTip="FFT 데이터 초기화"/>
+                        </StackPanel>
                         <!-- Gate Visualization Toggle & MaxIndex Toggle -->
                         <StackPanel Grid.Row="2">
                             <CheckBox x:Name="chkShowGates" Content="Show Gates on Graph"  IsChecked="True" Margin="5,5" Checked="ChkShowGates_Checked" Unchecked="ChkShowGates_Unchecked"/>
@@ -543,6 +549,11 @@
                                 <DataGridTextColumn Header="Frame Start" Binding="{Binding FrameStart}" Width="80"/>
                                 <DataGridTextColumn Header="Frame End" Binding="{Binding FrameEnd}" Width="80"/>
                                 <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="100"/>
+                                <!-- FFT 관련 컬럼들 -->
+                                <DataGridTextColumn Header="Raw Peak Freq (MHz)" Binding="{Binding PeakFrequencyRaw, StringFormat=N2}" Width="120"/>
+                                <DataGridTextColumn Header="Void Peak Freq (MHz)" Binding="{Binding PeakFrequencyVoid, StringFormat=N2}" Width="120"/>
+                                <DataGridTextColumn Header="Raw Peak Mag" Binding="{Binding PeakMagnitudeRaw, StringFormat=N4}" Width="100"/>
+                                <DataGridTextColumn Header="Void Peak Mag" Binding="{Binding PeakMagnitudeVoid, StringFormat=N4}" Width="100"/>
                             </DataGrid.Columns>
                         </DataGrid>
                     </StackPanel>

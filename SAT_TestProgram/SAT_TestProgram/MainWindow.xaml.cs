@@ -3742,6 +3742,174 @@ namespace SAT_TestProgram
             }
         }
 
+        #region FFT Analysis Methods
+
+        /// <summary>
+        /// Raw FFT 버튼 클릭 이벤트
+        /// </summary>
+        private void BtnRawFFT_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (_rawSignalData == null)
+                {
+                    System.Windows.MessageBox.Show("Raw Signal 데이터가 로드되지 않았습니다.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                if (_dataManager.GateDataCount == 0)
+                {
+                    System.Windows.MessageBox.Show("게이트가 설정되지 않았습니다.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                // 각 게이트에 대해 FFT 분석 수행
+                foreach (var gateData in _dataManager.GateDatas)
+                {
+                    AnalyzeGateFFT(gateData, true);
+                }
+
+                System.Windows.MessageBox.Show("Raw Signal 게이트 FFT 분석이 완료되었습니다.", "완료", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Raw FFT 분석 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Void FFT 버튼 클릭 이벤트
+        /// </summary>
+        private void BtnVoidFFT_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (_voidSignalData == null)
+                {
+                    System.Windows.MessageBox.Show("Void Signal 데이터가 로드되지 않았습니다.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                if (_dataManager.GateDataCount == 0)
+                {
+                    System.Windows.MessageBox.Show("게이트가 설정되지 않았습니다.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                // 각 게이트에 대해 FFT 분석 수행
+                foreach (var gateData in _dataManager.GateDatas)
+                {
+                    AnalyzeGateFFT(gateData, false);
+                }
+
+                System.Windows.MessageBox.Show("Void Signal 게이트 FFT 분석이 완료되었습니다.", "완료", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Void FFT 분석 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Clear FFT 버튼 클릭 이벤트
+        /// </summary>
+        private void BtnClearFFT_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                foreach (var gateData in _dataManager.GateDatas)
+                {
+                    // FFT 데이터 초기화
+                    gateData.PeakFrequencyRaw = 0;
+                    gateData.PeakFrequencyVoid = 0;
+                    gateData.PeakMagnitudeRaw = 0;
+                    gateData.PeakMagnitudeVoid = 0;
+                    gateData.FftDataRaw = null;
+                    gateData.FftDataVoid = null;
+                    gateData.FrequencyAxisRaw = null;
+                    gateData.FrequencyAxisVoid = null;
+                }
+
+                System.Windows.MessageBox.Show("FFT 데이터가 초기화되었습니다.", "완료", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"FFT 데이터 초기화 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 게이트 구간 FFT 분석
+        /// </summary>
+        /// <param name="gateData">분석할 게이트 데이터</param>
+        /// <param name="isRawSignal">Raw Signal 여부</param>
+        private void AnalyzeGateFFT(GateDatas gateData, bool isRawSignal)
+        {
+            try
+            {
+                var signalData = isRawSignal ? _rawSignalData : _voidSignalData;
+                if (signalData?.YData == null) return;
+
+                // 게이트 구간 데이터 추출
+                int startIndex = (int)gateData.Start;
+                int endIndex = (int)gateData.End;
+                
+                if (startIndex < 0 || endIndex >= signalData.YData.Length || startIndex >= endIndex)
+                {
+                    System.Windows.MessageBox.Show($"게이트 {gateData.Name}의 인덱스가 유효하지 않습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                int gateLength = endIndex - startIndex + 1;
+                float[] gateDataArray = new float[gateLength];
+                
+                for (int i = 0; i < gateLength; i++)
+                {
+                    gateDataArray[i] = signalData.YData[startIndex + i];
+                }
+
+                // FFT 수행
+                var (magnitudeData, frequencyAxis, complexData) = _signalProcessor.PerformFFT(gateDataArray, 1e9f);
+
+                // 피크 주파수 찾기
+                int peakIndex = 0;
+                float peakMagnitude = magnitudeData[0];
+                
+                for (int i = 1; i < magnitudeData.Length; i++)
+                {
+                    if (magnitudeData[i] > peakMagnitude)
+                    {
+                        peakMagnitude = magnitudeData[i];
+                        peakIndex = i;
+                    }
+                }
+
+                // 결과 저장
+                if (isRawSignal)
+                {
+                    gateData.PeakFrequencyRaw = frequencyAxis[peakIndex];
+                    gateData.PeakMagnitudeRaw = peakMagnitude;
+                    gateData.FftDataRaw = magnitudeData;
+                    gateData.FrequencyAxisRaw = frequencyAxis;
+                }
+                else
+                {
+                    gateData.PeakFrequencyVoid = frequencyAxis[peakIndex];
+                    gateData.PeakMagnitudeVoid = peakMagnitude;
+                    gateData.FftDataVoid = magnitudeData;
+                    gateData.FrequencyAxisVoid = frequencyAxis;
+                }
+
+                System.Diagnostics.Debug.WriteLine($"Gate {gateData.Name} {(isRawSignal ? "Raw" : "Void")} FFT 완료: 피크 주파수 = {frequencyAxis[peakIndex]:F2} MHz, 크기 = {peakMagnitude:F4}");
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"게이트 FFT 분석 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        #endregion
+
         /// <summary>
         /// Upper Graph 필터 콤보박스 변경 이벤트
         /// </summary>

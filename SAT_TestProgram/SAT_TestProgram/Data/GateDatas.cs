@@ -19,6 +19,16 @@ namespace SAT_TestProgram.Data
         private double _soundVelocity; // 개별 게이트의 음속 (m/s)
         private int _frameStart; // B Scan에서 사용할 Frame 시작 인덱스
         private int _frameEnd; // B Scan에서 사용할 Frame 끝 인덱스
+        
+        // FFT 관련 속성들
+        private double _peakFrequencyRaw; // Raw Signal 게이트 구간의 피크 주파수 (MHz)
+        private double _peakFrequencyVoid; // Void Signal 게이트 구간의 피크 주파수 (MHz)
+        private double _peakMagnitudeRaw; // Raw Signal 게이트 구간의 피크 크기
+        private double _peakMagnitudeVoid; // Void Signal 게이트 구간의 피크 크기
+        private float[] _fftDataRaw; // Raw Signal 게이트 구간의 FFT 데이터
+        private float[] _fftDataVoid; // Void Signal 게이트 구간의 FFT 데이터
+        private float[] _frequencyAxisRaw; // Raw Signal 주파수 축
+        private float[] _frequencyAxisVoid; // Void Signal 주파수 축
 
         /// <summary>
         /// 게이트 시작 위치 (double 타입으로 오버라이드)
@@ -213,6 +223,134 @@ namespace SAT_TestProgram.Data
                 OnPropertyChanged(nameof(FrameEnd));
             }
         }
+
+        #region FFT Properties
+
+        /// <summary>
+        /// Raw Signal 게이트 구간의 피크 주파수 (MHz)
+        /// </summary>
+        public double PeakFrequencyRaw
+        {
+            get => _peakFrequencyRaw;
+            set
+            {
+                _peakFrequencyRaw = value;
+                OnPropertyChanged(nameof(PeakFrequencyRaw));
+            }
+        }
+
+        /// <summary>
+        /// Void Signal 게이트 구간의 피크 주파수 (MHz)
+        /// </summary>
+        public double PeakFrequencyVoid
+        {
+            get => _peakFrequencyVoid;
+            set
+            {
+                _peakFrequencyVoid = value;
+                OnPropertyChanged(nameof(PeakFrequencyVoid));
+            }
+        }
+
+        /// <summary>
+        /// Raw Signal 게이트 구간의 피크 크기
+        /// </summary>
+        public double PeakMagnitudeRaw
+        {
+            get => _peakMagnitudeRaw;
+            set
+            {
+                _peakMagnitudeRaw = value;
+                OnPropertyChanged(nameof(PeakMagnitudeRaw));
+            }
+        }
+
+        /// <summary>
+        /// Void Signal 게이트 구간의 피크 크기
+        /// </summary>
+        public double PeakMagnitudeVoid
+        {
+            get => _peakMagnitudeVoid;
+            set
+            {
+                _peakMagnitudeVoid = value;
+                OnPropertyChanged(nameof(PeakMagnitudeVoid));
+            }
+        }
+
+        /// <summary>
+        /// Raw Signal 게이트 구간의 FFT 데이터
+        /// </summary>
+        public float[] FftDataRaw
+        {
+            get => _fftDataRaw;
+            set
+            {
+                _fftDataRaw = value;
+                OnPropertyChanged(nameof(FftDataRaw));
+            }
+        }
+
+        /// <summary>
+        /// Void Signal 게이트 구간의 FFT 데이터
+        /// </summary>
+        public float[] FftDataVoid
+        {
+            get => _fftDataVoid;
+            set
+            {
+                _fftDataVoid = value;
+                OnPropertyChanged(nameof(FftDataVoid));
+            }
+        }
+
+        /// <summary>
+        /// Raw Signal 주파수 축
+        /// </summary>
+        public float[] FrequencyAxisRaw
+        {
+            get => _frequencyAxisRaw;
+            set
+            {
+                _frequencyAxisRaw = value;
+                OnPropertyChanged(nameof(FrequencyAxisRaw));
+            }
+        }
+
+        /// <summary>
+        /// Void Signal 주파수 축
+        /// </summary>
+        public float[] FrequencyAxisVoid
+        {
+            get => _frequencyAxisVoid;
+            set
+            {
+                _frequencyAxisVoid = value;
+                OnPropertyChanged(nameof(FrequencyAxisVoid));
+            }
+        }
+
+        /// <summary>
+        /// 현재 활성화된 신호에 따른 피크 주파수 (Raw/Void 구분)
+        /// </summary>
+        /// <param name="isRawSignal">Raw Signal인지 여부</param>
+        /// <returns>해당 신호의 피크 주파수</returns>
+        public double GetPeakFrequency(bool isRawSignal)
+        {
+            return isRawSignal ? PeakFrequencyRaw : PeakFrequencyVoid;
+        }
+
+        /// <summary>
+        /// 현재 활성화된 신호에 따른 피크 크기 (Raw/Void 구분)
+        /// </summary>
+        /// <param name="isRawSignal">Raw Signal인지 여부</param>
+        /// <returns>해당 신호의 피크 크기</returns>
+        public double GetPeakMagnitude(bool isRawSignal)
+        {
+            return isRawSignal ? PeakMagnitudeRaw : PeakMagnitudeVoid;
+        }
+
+        #endregion
 
         /// <summary>
         /// GateDatas 생성자
