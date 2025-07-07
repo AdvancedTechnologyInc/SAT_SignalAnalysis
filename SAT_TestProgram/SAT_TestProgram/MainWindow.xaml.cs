@@ -4299,6 +4299,111 @@ namespace SAT_TestProgram
             }
         }
 
+        #region CSV Export Methods
+
+        /// <summary>
+        /// 게이트 데이터를 CSV 파일로 저장하는 버튼 클릭 이벤트
+        /// </summary>
+        private void BtnSaveGateToCSV_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (_dataManager.GateDataCount == 0)
+                {
+                    System.Windows.MessageBox.Show("저장할 게이트 데이터가 없습니다.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                // 파일 저장 다이얼로그
+                Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog
+                {
+                    Filter = "CSV Files (*.csv)|*.csv|All Files (*.*)|*.*",
+                    FilterIndex = 1,
+                    DefaultExt = "csv",
+                    FileName = $"GateData_{DateTime.Now:yyyyMMdd_HHmmss}"
+                };
+
+                if (saveFileDialog.ShowDialog() == true)
+                {
+                    SaveGateDataToCSV(saveFileDialog.FileName);
+                    System.Windows.MessageBox.Show($"게이트 데이터가 성공적으로 저장되었습니다.\n파일: {saveFileDialog.FileName}", 
+                        "저장 완료", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"CSV 저장 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 게이트 데이터를 CSV 파일로 저장 (세로 형태)
+        /// </summary>
+        /// <param name="filePath">저장할 파일 경로</param>
+        private void SaveGateDataToCSV(string filePath)
+        {
+            try
+            {
+                using (var writer = new System.IO.StreamWriter(filePath, false, System.Text.Encoding.UTF8))
+                {
+                    // 첫 번째 열은 데이터 항목명, 나머지 열은 각 게이트
+                    var gateDatas = _dataManager.GateDatas.ToList();
+                    
+                    // 헤더 작성 (첫 번째 열은 빈칸, 나머지는 게이트 이름)
+                    var header = "Data Item";
+                    for (int i = 0; i < gateDatas.Count; i++)
+                    {
+                        header += $",{gateDatas[i].Name}";
+                    }
+                    writer.WriteLine(header);
+
+                    // 각 데이터 항목을 행으로 작성
+                    WriteDataRow(writer, "Gate Start", gateDatas, g => g.Start.ToString("F2"));
+                    WriteDataRow(writer, "Gate Stop", gateDatas, g => g.End.ToString("F2"));
+                    WriteDataRow(writer, "Distance", gateDatas, g => g.Distance.ToString("F2"));
+                    WriteDataRow(writer, "Raw Max Index", gateDatas, g => g.MaxIndexRaw.ToString());
+                    WriteDataRow(writer, "Void Max Index", gateDatas, g => g.MaxIndexVoid.ToString());
+                    WriteDataRow(writer, "Raw Index Difference (ns)", gateDatas, g => g.IndexDifferenceRaw.ToString());
+                    WriteDataRow(writer, "Void Index Difference (ns)", gateDatas, g => g.IndexDifferenceVoid.ToString());
+                    WriteDataRow(writer, "Sound Velocity (m/s)", gateDatas, g => g.SoundVelocity.ToString("F0"));
+                    WriteDataRow(writer, "Raw Calculated Distance (μm)", gateDatas, g => g.CalculatedDistanceRaw.ToString("F1"));
+                    WriteDataRow(writer, "Void Calculated Distance (μm)", gateDatas, g => g.CalculatedDistanceVoid.ToString("F1"));
+                    WriteDataRow(writer, "Frame Start", gateDatas, g => g.FrameStart.ToString());
+                    WriteDataRow(writer, "Frame End", gateDatas, g => g.FrameEnd.ToString());
+                    WriteDataRow(writer, "Raw Peak Frequency (MHz)", gateDatas, g => g.PeakFrequencyRaw.ToString("F2"));
+                    WriteDataRow(writer, "Void Peak Frequency (MHz)", gateDatas, g => g.PeakFrequencyVoid.ToString("F2"));
+                    WriteDataRow(writer, "Raw Peak Magnitude", gateDatas, g => g.PeakMagnitudeRaw.ToString("F4"));
+                    WriteDataRow(writer, "Void Peak Magnitude", gateDatas, g => g.PeakMagnitudeVoid.ToString("F4"));
+                }
+
+                System.Diagnostics.Debug.WriteLine($"게이트 데이터 CSV 저장 완료 (세로 형태): {filePath}");
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"CSV 파일 저장 중 오류: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// 데이터 행을 CSV에 작성하는 헬퍼 메서드
+        /// </summary>
+        /// <param name="writer">StreamWriter</param>
+        /// <param name="dataItemName">데이터 항목명</param>
+        /// <param name="gateDatas">게이트 데이터 리스트</param>
+        /// <param name="valueSelector">값을 선택하는 함수</param>
+        private void WriteDataRow(System.IO.StreamWriter writer, string dataItemName, 
+                                List<GateDatas> gateDatas, Func<GateDatas, string> valueSelector)
+        {
+            var line = dataItemName;
+            foreach (var gateData in gateDatas)
+            {
+                line += $",{valueSelector(gateData)}";
+            }
+            writer.WriteLine(line);
+        }
+
+        #endregion
+
 
     }
 }

@@ -441,6 +441,7 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
                         <!-- Gate Input Controls -->
@@ -488,21 +489,21 @@
                         </GroupBox>
                         <!-- Gate Control Buttons -->
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,5" Grid.Row="1">
-                            <Button x:Name="btnAddGate" Content="Add" Width="60" Margin="5,0" Click="BtnAddGate_Click"/>
-                            <Button x:Name="btnModifyGate" Content="Modify" Width="60" Margin="5,0" Click="BtnModifyGate_Click"/>
-                            <Button x:Name="btnDeleteGate" Content="Delete" Width="60" Margin="5,0" Click="BtnDeleteGate_Click"/>
-                            <Button x:Name="btnInterval" Content="Interval" Width="60" Margin="5,0" Click="BtnInterval_Click"/>
-                            <Button x:Name="btnSaveGate" Content="Save" Width="60" Margin="5,0" Click="BtnSaveGate_Click"/>
-                            <Button x:Name="btnLoadGate" Content="Load" Width="60" Margin="5,0" Click="BtnLoadGate_Click"/>
+                            <Button x:Name="btnAddGate" Content="Add" Width="55" Margin="2,0" Click="BtnAddGate_Click"/>
+                            <Button x:Name="btnModifyGate" Content="Modify" Width="55" Margin="2,0" Click="BtnModifyGate_Click"/>
+                            <Button x:Name="btnDeleteGate" Content="Delete" Width="55" Margin="2,0" Click="BtnDeleteGate_Click"/>
+                            <Button x:Name="btnInterval" Content="Interval" Width="55" Margin="2,0" Click="BtnInterval_Click"/>
+                            <Button x:Name="btnSaveGate" Content="Save" Width="55" Margin="2,0" Click="BtnSaveGate_Click"/>
+                            <Button x:Name="btnLoadGate" Content="Load" Width="55" Margin="2,0" Click="BtnLoadGate_Click"/>
                         </StackPanel>
                         <!-- FFT Control Buttons -->
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,5" Grid.Row="1">
-                            <Button x:Name="btnRawFFT" Content="Raw FFT" Width="80" Margin="5,0" Click="BtnRawFFT_Click" ToolTip="Raw Signal 게이트 구간 FFT 분석"/>
-                            <Button x:Name="btnVoidFFT" Content="Void FFT" Width="80" Margin="5,0" Click="BtnVoidFFT_Click" ToolTip="Void Signal 게이트 구간 FFT 분석"/>
-                            <Button x:Name="btnClearFFT" Content="Clear FFT" Width="80" Margin="5,0" Click="BtnClearFFT_Click" ToolTip="FFT 데이터 초기화"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,5" Grid.Row="2">
+                            <Button x:Name="btnRawFFT" Content="Raw FFT" Width="75" Margin="2,0" Click="BtnRawFFT_Click" ToolTip="Raw Signal 게이트 구간 FFT 분석"/>
+                            <Button x:Name="btnVoidFFT" Content="Void FFT" Width="75" Margin="2,0" Click="BtnVoidFFT_Click" ToolTip="Void Signal 게이트 구간 FFT 분석"/>
+                            <Button x:Name="btnClearFFT" Content="Clear FFT" Width="75" Margin="2,0" Click="BtnClearFFT_Click" ToolTip="FFT 데이터 초기화"/>
                         </StackPanel>
                         <!-- Gate Visualization Toggle & MaxIndex Toggle -->
-                        <StackPanel Grid.Row="2">
+                        <StackPanel Grid.Row="3">
                             <CheckBox x:Name="chkShowGates" Content="Show Gates on Graph"  IsChecked="True" Margin="5,5" Checked="ChkShowGates_Checked" Unchecked="ChkShowGates_Unchecked"/>
                             <CheckBox x:Name="chkUseOriginalDataForMaxIndex" Content="원본 데이터로 MaxIndex 계산"  IsChecked="True" Margin="5,5" Checked="ChkUseOriginalDataForMaxIndex_Checked" Unchecked="ChkUseOriginalDataForMaxIndex_Unchecked" ToolTip="체크: 원본 신호 데이터 기준, 해제: 마지막 알고리즘 처리 데이터 기준"/>
                         </StackPanel>
@@ -512,11 +513,16 @@
                 <!-- Gate List -->
                 <GroupBox Header="Gate List" Grid.Row="1" Margin="0,5">
                     <StackPanel>
-                        <Button x:Name="btnCalculateDistances" Content="Cal" 
-                              Width="60" Height="25" Margin="5,5" 
-                              HorizontalAlignment="Left"
-                              Click="BtnCalculateDistances_Click"
-                              ToolTip="거리 계산 실행"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="5,5">
+                            <Button x:Name="btnCalculateDistances" Content="Cal" 
+                                  Width="60" Height="25" Margin="0,0,5,0" 
+                                  Click="BtnCalculateDistances_Click"
+                                  ToolTip="거리 계산 실행"/>
+                            <Button x:Name="btnSaveGateToCSV" Content="Save CSV" 
+                                  Width="80" Height="25" Margin="5,0,0,0" 
+                                  Click="BtnSaveGateToCSV_Click"
+                                  ToolTip="게이트 데이터를 CSV 파일로 저장"/>
+                        </StackPanel>
                         <DataGrid x:Name="dgGateList" 
                                  AutoGenerateColumns="False" 
                                  CanUserAddRows="False"
