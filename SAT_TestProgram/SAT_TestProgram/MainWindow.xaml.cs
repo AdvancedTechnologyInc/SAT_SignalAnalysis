@@ -64,6 +64,7 @@ namespace SAT_TestProgram
             lstAppliedAlgorithms.ItemsSource = _appliedAlgorithms;
 
             InitializePlots();
+            InitializeGraphFilters();
 
             // Add mouse click event handlers for plots
             plotUpper.MouseDown += Plot_MouseDown;
@@ -124,6 +125,32 @@ namespace SAT_TestProgram
             catch (Exception ex)
             {
                 System.Windows.MessageBox.Show($"플롯 초기화 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void InitializeGraphFilters()
+        {
+            try
+            {
+                // 그래프 필터 옵션 초기화
+                var filterOptions = new List<string>
+                {
+                    "모든 그래프",
+                    "주파수 그래프만",
+                    "시간 그래프만",
+                    "인덱스 그래프만"
+                };
+
+                cmbUpperGraphFilter.ItemsSource = filterOptions;
+                cmbLowerGraphFilter.ItemsSource = filterOptions;
+
+                // 기본값 설정
+                cmbUpperGraphFilter.SelectedIndex = 0;
+                cmbLowerGraphFilter.SelectedIndex = 0;
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"그래프 필터 초기화 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -674,18 +701,43 @@ namespace SAT_TestProgram
             {
                 var currentData = isRawData ? _rawSignalData : _voidSignalData;
 
-                // 인덱스 기반 X축 데이터 생성
-                float[] indexAxis = new float[processedData.Length];
-                for (int i = 0; i < processedData.Length; i++)
+                // X축 데이터 결정: customXAxis가 제공되면 사용,否则 인덱스 기반 사용
+                float[] xAxisData;
+                string xAxisLabel;
+                
+                if (customXAxis != null && customXAxis.Length == processedData.Length)
                 {
-                    indexAxis[i] = i;
+                    xAxisData = customXAxis;
+                    // FFT, 주파수 필터, IFFT의 경우 주파수 단위로 표시
+                    if (algorithmName == "FFT" || algorithmName == "Frequency Filter")
+                    {
+                        xAxisLabel = "Frequency (MHz)";
+                    }
+                    else if (algorithmName == "IFFT")
+                    {
+                        xAxisLabel = "Time (ns)";
+                    }
+                    else
+                    {
+                        xAxisLabel = "Index";
+                    }
+                }
+                else
+                {
+                    // 인덱스 기반 X축 데이터 생성
+                    xAxisData = new float[processedData.Length];
+                    for (int i = 0; i < processedData.Length; i++)
+                    {
+                        xAxisData[i] = i;
+                    }
+                    xAxisLabel = "Index";
                 }
 
                 // Create new AlgorithmDatas instance
                 var algorithmData = new AlgorithmDatas
                 {
                     Name = algorithmName,
-                    XData = indexAxis,  // customXAxis 대신 indexAxis 사용
+                    XData = xAxisData,
                     YData = processedData,
                     Gates = currentData.Gates?.ToList(),
                     FirstMaxIndex = currentData.FirstMaxIndex
@@ -717,8 +769,8 @@ namespace SAT_TestProgram
                     plot.AddScatter(algXData, algYData, label: algData.Name);
                 }
 
-                // Update X-axis label to show it's index based
-                plot.XLabel("Index");
+                // Update X-axis label
+                plot.XLabel(xAxisLabel);
 
                 // Show legend
                 plot.Legend();
@@ -762,171 +814,8 @@ namespace SAT_TestProgram
             {
                 if (data == null) return;
 
-                var plot = data == _rawSignalData ? plotUpper.Plot : plotLower.Plot;
-                plot.Clear();
-
-                // Set plot title using the file name without extension
-                string title = string.IsNullOrEmpty(data.FileName) ? "Signal" : data.FileName;
-                plot.Title(title);
-
-                // Create index-based X-axis data
-                float[] indexAxis = new float[data.YData.Length];
-                for (int i = 0; i < data.YData.Length; i++)
-                {
-                    indexAxis[i] = i;
-                }
-
-                // Convert float arrays to double arrays for plotting
-                double[] xData = indexAxis.Select(x => (double)x).ToArray();
-                double[] yData = data.YData.Select(y => (double)y).ToArray();
-
-                // Plot the main signal data
-                var scatter = plot.AddScatter(
-                    xData,
-                    yData,
-                    label: "Original"
-                );
-
-                // Plot algorithm results
-                var algorithmDatas = _dataManager.GetAllAlgorithmDatas(data == _rawSignalData);
-                foreach (var algData in algorithmDatas)
-                {
-                    // Convert algorithm data arrays to double
-                    double[] algXData = algData.XData.Select(x => (double)x).ToArray();
-                    double[] algYData = algData.YData.Select(y => (double)y).ToArray();
-
-                    var algScatter = plot.AddScatter(
-                        algXData,
-                        algYData,
-                        label: algData.Name
-                    );
-                }
-
-                // Index Start/Stop 구간을 회색으로 표시
-                if (_dataManager != null)
-                {
-                    // 기존 회색 영역 제거 (이미 추가된 polygon들을 찾아서 제거)
-                    var existingPlottables = plot.GetPlottables().ToList();
-                    foreach (var plottable in existingPlottables)
-                    {
-                        if (plottable is ScottPlot.Plottable.Polygon polygon)
-                        {
-                            // 회색 영역인지 확인 (색상으로 판단)
-                            if (polygon.Color.R == 128 && polygon.Color.G == 128 && polygon.Color.B == 128)
-                            {
-                                plot.Remove(plottable);
-                            }
-                        }
-                        else if (plottable is ScottPlot.Plottable.Text text)
-                        {
-                            // Index Start/Stop 라벨인지 확인
-                            if (text.Label == "Index Start" || text.Label == "Index Stop")
-                            {
-                                plot.Remove(plottable);
-                            }
-                        }
-                    }
-                    
-                    var axisLimits = plot.GetAxisLimits();
-                    
-                    // Index Start 구간 (0부터 Index Start까지)
-                    if (_dataManager.IndexStart > 0 && _dataManager.IndexStart < data.YData.Length)
-                    {
-                        var indexStartX = new double[] { 0, 0, _dataManager.IndexStart, _dataManager.IndexStart };
-                        var indexStartY = new double[] { axisLimits.YMin, axisLimits.YMax, axisLimits.YMax, axisLimits.YMin };
-                        var indexStartColor = System.Drawing.Color.FromArgb(50, 128, 128, 128); // 반투명 회색
-                        var indexStartPolygon = plot.AddPolygon(indexStartX, indexStartY, indexStartColor);
-                        
-                        // Index Start 라벨 추가
-                        var labelX = _dataManager.IndexStart / 2.0;
-                        var labelY = axisLimits.YMax * 0.9;
-                        var indexStartText = plot.AddText("Index Start", labelX, labelY);
-                        indexStartText.Color = System.Drawing.Color.Gray;
-                        indexStartText.Label = "Index Start"; // 라벨 속성 추가
-                    }
-                    
-                    // Index Stop 구간 (끝에서 Index Stop만큼 뺀 지점부터 끝까지)
-                    int indexStopStart = data.YData.Length - _dataManager.IndexStop;
-                    if (_dataManager.IndexStop > 0 && indexStopStart > 0 && indexStopStart < data.YData.Length)
-                    {
-                        var indexStopX = new double[] { indexStopStart, indexStopStart, data.YData.Length - 1, data.YData.Length - 1 };
-                        var indexStopY = new double[] { axisLimits.YMin, axisLimits.YMax, axisLimits.YMax, axisLimits.YMin };
-                        var indexStopColor = System.Drawing.Color.FromArgb(50, 128, 128, 128); // 반투명 회색
-                        var indexStopPolygon = plot.AddPolygon(indexStopX, indexStopY, indexStopColor);
-                        
-                        // Index Stop 라벨 추가
-                        var labelX = indexStopStart + (data.YData.Length - 1 - indexStopStart) / 2.0;
-                        var labelY = axisLimits.YMax * 0.9;
-                        var indexStopText = plot.AddText("Index Stop", labelX, labelY);
-                        indexStopText.Color = System.Drawing.Color.Gray;
-                        indexStopText.Label = "Index Stop"; // 라벨 속성 추가
-                    }
-                }
-
-                // Update X-axis label to show it's index based
-                plot.XLabel("Index");
-
-                // Show legend if there are algorithm results and legend checkbox is checked
-                bool showLegend = false;
-                if (data == _rawSignalData)
-                {
-                    showLegend = chkShowLegendUpper?.IsChecked == true && algorithmDatas.Any();
-                }
-                else
-                {
-                    showLegend = chkShowLegendLower?.IsChecked == true && algorithmDatas.Any();
-                }
-                
-                if (showLegend)
-                {
-                    plot.Legend();
-                }
-                else
-                {
-                    // 범례 숨기기
-                    plot.Legend(false);
-                }
-
-                // Store scatter plot reference
-                if (data == _rawSignalData)
-                    rawScatter = scatter;
-                else
-                    voidScatter = scatter;
-
-                // Update axis limits
-                if (data.YData.Length > 0)
-                {
-                    double xMin = 0;
-                    double xMax = data.YData.Length - 1;
-                    double yMin = data.YData.Min();
-                    double yMax = data.YData.Max();
-
-                    // Add some padding
-                    double xPadding = (xMax - xMin) * 0.05;
-                    double yPadding = (yMax - yMin) * 0.05;
-
-                    plot.SetAxisLimits(
-                        xMin: xMin - xPadding,
-                        xMax: xMax + xPadding,
-                        yMin: yMin - yPadding,
-                        yMax: yMax + yPadding
-                    );
-                }
-
-                // Refresh the plot
-                if (data == _rawSignalData)
-                    plotUpper.Refresh();
-                else
-                    plotLower.Refresh();
-
-                // Update preview plot if needed
-                UpdatePreviewPlot();
-
-                // 게이트 시각화 업데이트
-                VisualizeGates();
-
-                // MaxIndex 업데이트
-                UpdateAllGateMaxIndices();
+                bool isUpperGraph = data == _rawSignalData;
+                UpdatePlotsWithFilter(data, isUpperGraph);
             }
             catch (Exception ex)
             {
@@ -3850,6 +3739,395 @@ namespace SAT_TestProgram
             catch (Exception ex)
             {
                 System.Windows.MessageBox.Show($"Void Signal A Scan 선택 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Upper Graph 필터 콤보박스 변경 이벤트
+        /// </summary>
+        private void CmbUpperGraphFilter_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            try
+            {
+                if (cmbUpperGraphFilter.SelectedIndex >= 0 && _rawSignalData != null)
+                {
+                    UpdatePlotsWithFilter(_rawSignalData, true);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Upper Graph 필터 변경 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Lower Graph 필터 콤보박스 변경 이벤트
+        /// </summary>
+        private void CmbLowerGraphFilter_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            try
+            {
+                if (cmbLowerGraphFilter.SelectedIndex >= 0 && _voidSignalData != null)
+                {
+                    UpdatePlotsWithFilter(_voidSignalData, false);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Lower Graph 필터 변경 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 필터를 적용하여 플롯 업데이트
+        /// </summary>
+        /// <param name="data">표시할 데이터</param>
+        /// <param name="isUpperGraph">Upper Graph 여부</param>
+        private void UpdatePlotsWithFilter(DataModel data, bool isUpperGraph)
+        {
+            try
+            {
+                if (data == null) return;
+
+                var plot = isUpperGraph ? plotUpper.Plot : plotLower.Plot;
+                var filterComboBox = isUpperGraph ? cmbUpperGraphFilter : cmbLowerGraphFilter;
+                
+                plot.Clear();
+
+                // Set plot title using the file name without extension
+                string title = string.IsNullOrEmpty(data.FileName) ? "Signal" : data.FileName;
+                plot.Title(title);
+
+                // Create index-based X-axis data for original data
+                float[] indexAxis = new float[data.YData.Length];
+                for (int i = 0; i < data.YData.Length; i++)
+                {
+                    indexAxis[i] = i;
+                }
+
+                // Convert float arrays to double arrays for plotting
+                double[] xData = indexAxis.Select(x => (double)x).ToArray();
+                double[] yData = data.YData.Select(y => (double)y).ToArray();
+
+                // Get algorithm data and apply filter
+                var algorithmDatas = _dataManager.GetAllAlgorithmDatas(isUpperGraph);
+                string selectedFilter = filterComboBox.SelectedItem as string;
+
+                // Original 그래프 표시 여부 결정
+                bool showOriginal = false;
+                switch (selectedFilter)
+                {
+                    case "모든 그래프":
+                        showOriginal = true;
+                        break;
+                    case "주파수 그래프만":
+                        showOriginal = false; // 주파수 그래프만 표시할 때는 Original 숨김
+                        break;
+                    case "시간 그래프만":
+                        showOriginal = false; // 시간 그래프만 표시할 때는 Original 숨김
+                        break;
+                    case "인덱스 그래프만":
+                        showOriginal = true; // 인덱스 그래프만 표시할 때는 Original 표시
+                        break;
+                    default:
+                        showOriginal = true;
+                        break;
+                }
+
+                // Original 그래프 표시 (필터에 따라)
+                var scatter = plot.AddScatter(
+                    xData,
+                    yData,
+                    label: "Original",
+                    color: showOriginal ? System.Drawing.Color.Black : System.Drawing.Color.Transparent
+                );
+
+                // 알고리즘 데이터 필터링 및 표시
+                foreach (var algData in algorithmDatas)
+                {
+                    bool shouldShow = false;
+
+                    switch (selectedFilter)
+                    {
+                        case "모든 그래프":
+                            shouldShow = true;
+                            break;
+                        case "주파수 그래프만":
+                            shouldShow = algData.Name == "FFT" || algData.Name == "Frequency Filter";
+                            break;
+                        case "시간 그래프만":
+                            shouldShow = algData.Name == "IFFT";
+                            break;
+                        case "인덱스 그래프만":
+                            shouldShow = algData.Name != "FFT" && algData.Name != "Frequency Filter" && algData.Name != "IFFT";
+                            break;
+                        default:
+                            shouldShow = true;
+                            break;
+                    }
+
+                    if (shouldShow)
+                    {
+                        // Convert algorithm data arrays to double
+                        double[] algXData = algData.XData.Select(x => (double)x).ToArray();
+                        double[] algYData = algData.YData.Select(y => (double)y).ToArray();
+
+                        plot.AddScatter(
+                            algXData,
+                            algYData,
+                            label: algData.Name
+                        );
+                    }
+                }
+
+                // Index Start/Stop 구간을 회색으로 표시 (필터와 관계없이 항상 표시)
+                if (_dataManager != null)
+                {
+                    // 기존 회색 영역 제거
+                    var existingPlottables = plot.GetPlottables().ToList();
+                    foreach (var plottable in existingPlottables)
+                    {
+                        if (plottable is ScottPlot.Plottable.Polygon polygon)
+                        {
+                            if (polygon.Color.R == 128 && polygon.Color.G == 128 && polygon.Color.B == 128)
+                            {
+                                plot.Remove(plottable);
+                            }
+                        }
+                        else if (plottable is ScottPlot.Plottable.Text text)
+                        {
+                            if (text.Label == "Index Start" || text.Label == "Index Stop")
+                            {
+                                plot.Remove(plottable);
+                            }
+                        }
+                    }
+                    
+                    var axisLimits = plot.GetAxisLimits();
+                    
+                    // Index Start 구간
+                    if (_dataManager.IndexStart > 0 && _dataManager.IndexStart < data.YData.Length)
+                    {
+                        var indexStartX = new double[] { 0, 0, _dataManager.IndexStart, _dataManager.IndexStart };
+                        var indexStartY = new double[] { axisLimits.YMin, axisLimits.YMax, axisLimits.YMax, axisLimits.YMin };
+                        var indexStartColor = System.Drawing.Color.FromArgb(50, 128, 128, 128);
+                        var indexStartPolygon = plot.AddPolygon(indexStartX, indexStartY, indexStartColor);
+                        
+                        var labelX = _dataManager.IndexStart / 2.0;
+                        var labelY = axisLimits.YMax * 0.9;
+                        var indexStartText = plot.AddText("Index Start", labelX, labelY);
+                        indexStartText.Color = System.Drawing.Color.Gray;
+                        indexStartText.Label = "Index Start";
+                    }
+                    
+                    // Index Stop 구간
+                    int indexStopStart = data.YData.Length - _dataManager.IndexStop;
+                    if (_dataManager.IndexStop > 0 && indexStopStart > 0 && indexStopStart < data.YData.Length)
+                    {
+                        var indexStopX = new double[] { indexStopStart, indexStopStart, data.YData.Length - 1, data.YData.Length - 1 };
+                        var indexStopY = new double[] { axisLimits.YMin, axisLimits.YMax, axisLimits.YMax, axisLimits.YMin };
+                        var indexStopColor = System.Drawing.Color.FromArgb(50, 128, 128, 128);
+                        var indexStopPolygon = plot.AddPolygon(indexStopX, indexStopY, indexStopColor);
+                        
+                        var labelX = indexStopStart + (data.YData.Length - 1 - indexStopStart) / 2.0;
+                        var labelY = axisLimits.YMax * 0.9;
+                        var indexStopText = plot.AddText("Index Stop", labelX, labelY);
+                        indexStopText.Color = System.Drawing.Color.Gray;
+                        indexStopText.Label = "Index Stop";
+                    }
+                }
+
+                // Update X-axis label based on filter and algorithm data
+                string xAxisLabel = "Index";
+                if (selectedFilter == "모든 그래프")
+                {
+                    // 모든 그래프 선택 시 항상 Index로 설정
+                    xAxisLabel = "Index";
+                }
+                else if (algorithmDatas.Any())
+                {
+                    var fftData = algorithmDatas.FirstOrDefault(a => a.Name == "FFT" || a.Name == "Frequency Filter");
+                    var ifftData = algorithmDatas.FirstOrDefault(a => a.Name == "IFFT");
+                    
+                    if (selectedFilter == "주파수 그래프만" && fftData != null)
+                    {
+                        xAxisLabel = "Frequency (MHz)";
+                    }
+                    else if (selectedFilter == "시간 그래프만" && ifftData != null)
+                    {
+                        xAxisLabel = "Time (ns)";
+                    }
+                    else if (selectedFilter == "인덱스 그래프만")
+                    {
+                        xAxisLabel = "Index";
+                    }
+                }
+                plot.XLabel(xAxisLabel);
+
+                // Show legend if there are algorithm results and legend checkbox is checked
+                bool showLegend = false;
+                if (isUpperGraph)
+                {
+                    showLegend = chkShowLegendUpper?.IsChecked == true && algorithmDatas.Any();
+                }
+                else
+                {
+                    showLegend = chkShowLegendLower?.IsChecked == true && algorithmDatas.Any();
+                }
+                
+                if (showLegend)
+                {
+                    plot.Legend();
+                }
+                else
+                {
+                    plot.Legend(false);
+                }
+
+                // Store scatter plot reference
+                if (isUpperGraph)
+                    rawScatter = scatter;
+                else
+                    voidScatter = scatter;
+
+                // Update axis limits based on filter and data type
+                if (data.YData.Length > 0)
+                {
+                    double xMin, xMax, yMin, yMax;
+
+                    // 필터에 따라 축 범위 결정
+                    switch (selectedFilter)
+                    {
+                        case "주파수 그래프만":
+                            // 주파수 데이터에 맞는 스케일 설정
+                            if (algorithmDatas.Any(a => a.Name == "FFT" || a.Name == "Frequency Filter"))
+                            {
+                                // 주파수 데이터의 X축 범위 (MHz 단위)
+                                var freqData = algorithmDatas.FirstOrDefault(a => a.Name == "FFT" || a.Name == "Frequency Filter");
+                                if (freqData != null && freqData.XData.Length > 0)
+                                {
+                                    xMin = freqData.XData.Min();
+                                    xMax = freqData.XData.Max();
+                                }
+                                else
+                                {
+                                    xMin = 0;
+                                    xMax = 1000; // 기본 주파수 범위 (MHz)
+                                }
+
+                                // 주파수 데이터의 Y축 범위
+                                var freqYData = algorithmDatas.Where(a => a.Name == "FFT" || a.Name == "Frequency Filter")
+                                                             .SelectMany(a => a.YData)
+                                                             .ToList();
+                                if (freqYData.Any())
+                                {
+                                    yMin = freqYData.Min();
+                                    yMax = freqYData.Max();
+                                }
+                                else
+                                {
+                                    yMin = 0;
+                                    yMax = 1;
+                                }
+                            }
+                            else
+                            {
+                                // 주파수 데이터가 없으면 기본 범위
+                                xMin = 0;
+                                xMax = 1000;
+                                yMin = 0;
+                                yMax = 1;
+                            }
+                            break;
+
+                        case "시간 그래프만":
+                            // 시간 데이터에 맞는 스케일 설정
+                            if (algorithmDatas.Any(a => a.Name == "IFFT"))
+                            {
+                                var timeData = algorithmDatas.FirstOrDefault(a => a.Name == "IFFT");
+                                if (timeData != null && timeData.XData.Length > 0)
+                                {
+                                    xMin = timeData.XData.Min();
+                                    xMax = timeData.XData.Max();
+                                }
+                                else
+                                {
+                                    xMin = 0;
+                                    xMax = 1000; // 기본 시간 범위 (ns)
+                                }
+
+                                var timeYData = algorithmDatas.Where(a => a.Name == "IFFT")
+                                                             .SelectMany(a => a.YData)
+                                                             .ToList();
+                                if (timeYData.Any())
+                                {
+                                    yMin = timeYData.Min();
+                                    yMax = timeYData.Max();
+                                }
+                                else
+                                {
+                                    yMin = -1;
+                                    yMax = 1;
+                                }
+                            }
+                            else
+                            {
+                                xMin = 0;
+                                xMax = 1000;
+                                yMin = -1;
+                                yMax = 1;
+                            }
+                            break;
+
+                        default:
+                            // 기본 인덱스 기반 스케일
+                            xMin = 0;
+                            xMax = data.YData.Length - 1;
+                            yMin = data.YData.Min();
+                            yMax = data.YData.Max();
+                            break;
+                    }
+
+                    // 패딩 추가
+                    double xPadding = (xMax - xMin) * 0.05;
+                    double yPadding = (yMax - yMin) * 0.05;
+
+                    // 값이 동일한 경우 최소 범위 보장
+                    if (xMax == xMin)
+                    {
+                        xMax = xMin + 1;
+                    }
+                    if (yMax == yMin)
+                    {
+                        yMax = yMin + 1;
+                    }
+
+                    plot.SetAxisLimits(
+                        xMin: xMin - xPadding,
+                        xMax: xMax + xPadding,
+                        yMin: yMin - yPadding,
+                        yMax: yMax + yPadding
+                    );
+                }
+
+                // Refresh the plot
+                if (isUpperGraph)
+                    plotUpper.Refresh();
+                else
+                    plotLower.Refresh();
+
+                // Update preview plot if needed
+                UpdatePreviewPlot();
+
+                // 게이트 시각화 업데이트
+                VisualizeGates();
+
+                // MaxIndex 업데이트
+                UpdateAllGateMaxIndices();
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"필터 적용 플롯 업데이트 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

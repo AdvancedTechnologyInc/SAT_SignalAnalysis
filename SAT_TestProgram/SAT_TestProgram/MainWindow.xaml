@@ -234,6 +234,13 @@
                                     VerticalAlignment="Center"
                                     Checked="ChkShowLegendUpper_Checked"
                                     Unchecked="ChkShowLegendUpper_Unchecked"/>
+                            <TextBlock Text="그래프 필터:" 
+                                     VerticalAlignment="Center" 
+                                     Margin="15,0,5,0"/>
+                            <ComboBox x:Name="cmbUpperGraphFilter"
+                                     Width="120"
+                                     Margin="5,0,15,0"
+                                     SelectionChanged="CmbUpperGraphFilter_SelectionChanged"/>
                         </StackPanel>
 
                         <!-- Upper Graph -->
@@ -297,6 +304,13 @@
                                     VerticalAlignment="Center"
                                     Checked="ChkShowLegendLower_Checked"
                                     Unchecked="ChkShowLegendLower_Unchecked"/>
+                            <TextBlock Text="그래프 필터:" 
+                                     VerticalAlignment="Center" 
+                                     Margin="15,0,5,0"/>
+                            <ComboBox x:Name="cmbLowerGraphFilter"
+                                     Width="120"
+                                     Margin="5,0,15,0"
+                                     SelectionChanged="CmbLowerGraphFilter_SelectionChanged"/>
                         </StackPanel>
 
                         <!-- Lower Graph -->
