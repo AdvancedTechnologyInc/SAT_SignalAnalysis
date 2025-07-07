@@ -130,36 +130,51 @@ namespace SAT_TestProgram.Models
         #endregion
 
         #region Filter Methods
-        public (float[] magnitudeData, float[] frequencyAxis, Complex[] complexData) PerformFFT(float[] inputSignal, float samplingRate = 100f)
+        //public (float[] magnitudeData, float[] frequencyAxis, Complex[] complexData) PerformFFT(float[] inputSignal, float samplingRate = 100f)
+        //{
+        //    int n = inputSignal.Length;
+        //    double samplingIntervalNs = 1.0; // 1 ns 간격
+        //     samplingRate = 1e9f; // 1 GHz
+
+
+        //    Complex[] complexSignal = new Complex[n];
+        //    for (int i = 0; i < n; i++) complexSignal[i] = new Complex(inputSignal[i], 0);
+
+        //    Fourier.Forward(complexSignal, FourierOptions.Matlab);
+
+        //    // 주파수 및 크기 계산
+        //    float[] magnitude = new float[n / 2];
+        //    float[] freqMHz = new float[n / 2];
+
+        //    for (int i = 0; i < n / 2; i++)
+        //    {
+        //        freqMHz[i] = (float)((i * samplingRate / n) / 1e6); // MHz 단위 변환 후 float
+        //        magnitude[i] = (float)(complexSignal[i].Magnitude / n);  // 정규화 후 float
+        //        Console.WriteLine($"Freq: {freqMHz[i]:F2} MHz, Mag: {magnitude[i]:F4}");
+        //    }
+
+        //    return (magnitude, freqMHz, complexSignal);
+        //}
+        public (float[] magnitudeData, float[] frequencyAxis, Complex[] complexData) PerformFFT(float[] inputSignal, float samplingRate = 1e9f)
         {
             int n = inputSignal.Length;
+
             Complex[] complexSignal = new Complex[n];
             for (int i = 0; i < n; i++) complexSignal[i] = new Complex(inputSignal[i], 0);
 
             Fourier.Forward(complexSignal, FourierOptions.Matlab);
 
-            // 주파수 축 계산
-            float[] frequencyAxis = new float[n];
-            float df = samplingRate / n; // 주파수 해상도
-            for (int i = 0; i < n/2; i++)
+            float[] magnitude = new float[n / 2];
+            float[] freqMHz = new float[n / 2];
+
+            for (int i = 0; i < n / 2; i++)
             {
-                frequencyAxis[i] = i * df;
-            }
-            for (int i = n/2; i < n; i++)
-            {
-                frequencyAxis[i] = (i - n) * df;
+                freqMHz[i] = (float)((i * samplingRate / n) / 1e6f); // MHz
+                magnitude[i] = (float)(complexSignal[i].Magnitude / n);
             }
 
-            // Magnitude 스펙트럼 계산
-            float[] magnitudeSpectrum = new float[n];
-            for (int i = 0; i < n; i++)
-            {
-                magnitudeSpectrum[i] = (float)complexSignal[i].Magnitude;
-            }
-
-            return (magnitudeSpectrum, frequencyAxis, complexSignal);
+            return (magnitude, freqMHz, complexSignal);
         }
-
         public (float[] magnitudeSpectrum, float[] frequencyAxis, Complex[] complexSpectrum) ApplyFrequencyFilter(Complex[] inputSignal, float middleCutOff, float sideCutOff, float samplingRate)
         {
             int n = inputSignal.Length;

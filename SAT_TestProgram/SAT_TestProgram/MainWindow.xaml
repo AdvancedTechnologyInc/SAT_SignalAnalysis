@@ -112,7 +112,7 @@
                                         </DockPanel>
                                         <DockPanel Margin="0,5">
                                             <TextBlock Text="Sampling Rate (Hz):" Width="120" VerticalAlignment="Center"/>
-                                            <TextBox x:Name="txtSamplingRate" Text="100" Width="60"
+                                            <TextBox x:Name="txtSamplingRate" Text="1000000000" Width="60"
                                                      ToolTip="Sampling rate in Hz"/>
                                         </DockPanel>
                                     </StackPanel>
