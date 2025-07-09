@@ -178,13 +178,62 @@
                         </Grid>
                     </Grid>
                 </GroupBox>
+
+                <!-- Data Info Section -->
+                <GroupBox Grid.Row="2"
+                         Header="Data Info"
+                         Margin="5">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <!-- First Row -->
+                        <StackPanel Grid.Row="0" 
+                                  Orientation="Horizontal" 
+                                  Margin="5,5,5,2">
+                            <Button x:Name="btnDataProcess"
+                                    Content="Data Process"
+                                    Margin="5,0,15,0"
+                                    Padding="5,2"
+                                    Click="BtnDataProcess_Click"/>
+                            <TextBlock Text="기준 데이터:" 
+                                     VerticalAlignment="Center" 
+                                     Margin="15,0,5,0"/>
+                            <TextBox x:Name="txtReferenceDataIndex"
+                                     Width="60"
+                                     Text="0"
+                                     VerticalAlignment="Center"
+                                     Margin="5,0,15,0"
+                                     ToolTip="데이터 재정렬 기준 인덱스"/>
+                        </StackPanel>
+                        
+                        <!-- Second Row -->
+                        <StackPanel Grid.Row="1" 
+                                  Orientation="Horizontal" 
+                                  Margin="5,2,5,5">
+                            <TextBlock Text="Max Voltage:" 
+                                     VerticalAlignment="Center" 
+                                     Margin="5,0,5,0"/>
+                            <TextBox x:Name="txtMaxVoltage"
+                                     Width="80"
+                                     Text="0"
+                                     VerticalAlignment="Center"
+                                     Margin="5,0,15,0"
+                                     ToolTip="기준 데이터의 최대 전압값 (Intensity)"
+                                     TextChanged="TxtMaxVoltage_TextChanged"/>
+                        </StackPanel>
+                    </Grid>
+                </GroupBox>
                
 
             </Grid>
         </GroupBox>
 
         <!-- Middle Section - Graphs -->
-        <TabControl Grid.Column="1" 
+        <TabControl x:Name="tabControl"
+                   Grid.Column="1" 
                    Margin="5"
                    BorderBrush="Gray"
                    BorderThickness="1">
@@ -375,20 +424,6 @@
                                     Margin="5,0,15,0"
                                     Padding="5,2"
                                     Click="BtnClearBScanData_Click"/>
-                            <Button x:Name="btnDataProcess"
-                                    Content="Data Process"
-                                    Margin="5,0,15,0"
-                                    Padding="5,2"
-                                    Click="BtnDataProcess_Click"/>
-                            <TextBlock Text="기준 데이터:" 
-                                     VerticalAlignment="Center" 
-                                     Margin="15,0,5,0"/>
-                            <TextBox x:Name="txtReferenceDataIndex"
-                                     Width="60"
-                                     Text="0"
-                                     VerticalAlignment="Center"
-                                     Margin="5,0,15,0"
-                                     ToolTip="데이터 재정렬 기준 인덱스"/>
                         </StackPanel>
                         
                         <!-- Second Row -->
@@ -400,16 +435,6 @@
                                     Margin="5,0,15,0"
                                     Padding="5,2"
                                     Click="BtnBScanEnvelope_Click"/>
-                            <TextBlock Text="Max Voltage:" 
-                                     VerticalAlignment="Center" 
-                                     Margin="15,0,5,0"/>
-                            <TextBox x:Name="txtMaxVoltage"
-                                     Width="80"
-                                     Text="0"
-                                     VerticalAlignment="Center"
-                                     Margin="5,0,15,0"
-                                     ToolTip="기준 데이터의 최대 전압값 (Intensity)"
-                                     TextChanged="TxtMaxVoltage_TextChanged"/>
                             <Button x:Name="btnSaveBScanBitmap"
                                     Content="Save as Bitmap"
                                     Margin="5,0,15,0"

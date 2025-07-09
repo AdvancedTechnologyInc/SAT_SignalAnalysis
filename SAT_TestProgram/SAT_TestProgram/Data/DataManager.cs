@@ -105,6 +105,11 @@ namespace SAT_TestProgram.Data
         public int[,] BscanLine = new int[,] { };
 
         /// <summary>
+        /// C Scan 라인 데이터
+        /// </summary>
+        public int[,] CscanLine = new int[,] { };
+
+        /// <summary>
         /// B Scan 결과 데이터
         /// </summary>
         public double[,] BscanEnvelope = new double[,] { };

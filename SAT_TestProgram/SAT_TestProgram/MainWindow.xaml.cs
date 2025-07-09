@@ -4445,39 +4445,44 @@ namespace SAT_TestProgram
                     plotCScan.Plot.Clear();
                     plotCScan.Refresh();
 
-                    // Load C Scan data
+                    string fileName = System.IO.Path.GetFileNameWithoutExtension(openFileDialog.FileName);
+                    
+                    // C Scan 데이터를 2차원 배열로 로드
                     int[,] cScanArray = ReadCsvToIntArray(openFileDialog.FileName);
-                    if (cScanArray != null && cScanArray.Length > 0)
+                    
+                    // DataManager의 CscanLine에 데이터 저장
+                    _dataManager.CscanLine = cScanArray;
+                    
+                    // C Scan 데이터를 DataModel로 변환하여 플롯에 표시
+                    // 첫 번째 행을 기본 데이터로 사용
+                    if (cScanArray.GetLength(0) > 0 && cScanArray.GetLength(1) > 0)
                     {
+                        float[] yData = new float[cScanArray.GetLength(1)];
+                        for (int i = 0; i < cScanArray.GetLength(1); i++)
+                        {
+                            yData[i] = cScanArray[0, i]; // 첫 번째 행 사용
+                        }
+                        
                         _cScanData = new DataModel
                         {
-                            DataNum = cScanArray.Length,
-                            DataIndex = Enumerable.Range(0, cScanArray.Length).ToArray(),
-                            Second = new double[cScanArray.Length],
-                            Volt = new double[cScanArray.Length],
-                            XData = new float[cScanArray.Length],
-                            YData = new float[cScanArray.Length]
+                            FileName = fileName,
+                            YData = yData,
+                            DataNum = yData.Length
                         };
-
-                        // Convert 2D array to 1D array for display
-                        int index = 0;
-                        for (int i = 0; i < cScanArray.GetLength(0); i++)
-                        {
-                            for (int j = 0; j < cScanArray.GetLength(1); j++)
-                            {
-                                _cScanData.XData[index] = index;
-                                _cScanData.YData[index] = cScanArray[i, j];
-                                _cScanData.Second[index] = index;
-                                _cScanData.Volt[index] = cScanArray[i, j];
-                                index++;
-                            }
-                        }
-
-                        // Set C Scan data in DataManager
-                        _dataManager.SetCScanData(_cScanData);
+                        
                         UpdateCScanPlot(_cScanData);
-                        System.Windows.MessageBox.Show($"C Scan 데이터가 성공적으로 로드되었습니다.\n파일: {openFileDialog.FileName}", 
-                            "로드 완료", MessageBoxButton.OK, MessageBoxImage.Information);
+                        
+                        // 기준 데이터 인덱스를 중앙값으로 설정
+                        txtReferenceDataIndex.Text = (cScanArray.GetLength(0) / 2).ToString();
+                        
+                        // Max Voltage 값 업데이트
+                        UpdateMaxVoltage();
+                        
+                        System.Windows.MessageBox.Show(
+                            $"C Scan 데이터 로드 완료\n행: {cScanArray.GetLength(0)}, 열: {cScanArray.GetLength(1)}",
+                            "성공",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
                     }
                 }
                 catch (Exception ex)
@@ -4495,7 +4500,7 @@ namespace SAT_TestProgram
             try
             {
                 _cScanData = null;
-                _dataManager.ClearCScanData();
+                _dataManager.CscanLine = new int[,] { };
                 plotCScan.Plot.Clear();
                 plotCScan.Refresh();
                 System.Windows.MessageBox.Show("C Scan 데이터가 클리어되었습니다.", "클리어 완료", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -4621,7 +4626,7 @@ namespace SAT_TestProgram
 
                 // Create scatter plot for C Scan data
                 // Convert float arrays to double arrays for ScottPlot
-                double[] xData = data.XData.Select(x => (double)x).ToArray();
+                double[] xData = Enumerable.Range(0, data.YData.Length).Select(x => (double)x).ToArray();
                 double[] yData = data.YData.Select(y => (double)y).ToArray();
                 
                 cScanScatter = plotCScan.Plot.AddScatter(xData, yData, 
@@ -4663,27 +4668,22 @@ namespace SAT_TestProgram
         {
             try
             {
-                // B Scan 데이터가 로드되어 있는지 확인
-                if (_dataManager.BscanLine == null || _dataManager.BscanLine.Length == 0)
+                // 현재 활성화된 탭 확인
+                TabItem activeTab = tabControl.SelectedItem as TabItem;
+                if (activeTab == null)
                 {
-                    System.Windows.MessageBox.Show("B Scan 데이터를 먼저 로드해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                    System.Windows.MessageBox.Show("활성화된 탭을 찾을 수 없습니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
+
+                string activeTabName = activeTab.Header.ToString();
+                bool isBScan = activeTabName.Contains("B Scan");
+                bool isCScan = activeTabName.Contains("C Scan");
 
                 // 기준 데이터 인덱스 가져오기
                 if (!int.TryParse(txtReferenceDataIndex.Text, out int referenceIndex))
                 {
                     System.Windows.MessageBox.Show("유효한 기준 데이터 인덱스를 입력해주세요.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                int rowCount = _dataManager.BscanLine.GetLength(0);
-                int colCount = _dataManager.BscanLine.GetLength(1);
-
-                // 기준 인덱스가 유효한 범위인지 확인
-                if (referenceIndex < 0 || referenceIndex >= rowCount)
-                {
-                    System.Windows.MessageBox.Show($"기준 데이터 인덱스는 0에서 {rowCount - 1} 사이여야 합니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
@@ -4700,23 +4700,82 @@ namespace SAT_TestProgram
                     }
                 }
 
-                // 데이터 처리 로직 (Envelope 기반)
-                int[,] processedArray = ProcessBScanData(_dataManager.BscanLine, referenceIndex, intensity);
+                if (isBScan)
+                {
+                    // B Scan 데이터 처리
+                    if (_dataManager.BscanLine == null || _dataManager.BscanLine.Length == 0)
+                    {
+                        System.Windows.MessageBox.Show("B Scan 데이터를 먼저 로드해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                        return;
+                    }
 
-                // 처리된 데이터로 업데이트
-                _dataManager.BscanLine = processedArray;
+                    int rowCount = _dataManager.BscanLine.GetLength(0);
+                    int colCount = _dataManager.BscanLine.GetLength(1);
 
-                // 플롯 업데이트
-                UpdateBScanPlotWithProcessedData(processedArray);
+                    // 기준 인덱스가 유효한 범위인지 확인
+                    if (referenceIndex < 0 || referenceIndex >= rowCount)
+                    {
+                        System.Windows.MessageBox.Show($"기준 데이터 인덱스는 0에서 {rowCount - 1} 사이여야 합니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+
+                    // 데이터 처리 로직 (Envelope 기반)
+                    int[,] processedArray = ProcessBScanData(_dataManager.BscanLine, referenceIndex, intensity);
+
+                    // 처리된 데이터로 업데이트
+                    _dataManager.BscanLine = processedArray;
+
+                    // 플롯 업데이트
+                    UpdateBScanPlotWithProcessedData(processedArray);
+
+                    System.Windows.MessageBox.Show(
+                        $"B Scan 데이터 처리 완료\n기준 데이터 인덱스: {referenceIndex}\nIntensity: {intensity:F2}",
+                        "성공",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+                else if (isCScan)
+                {
+                    // C Scan 데이터 처리
+                    if (_dataManager.CscanLine == null || _dataManager.CscanLine.Length == 0)
+                    {
+                        System.Windows.MessageBox.Show("C Scan 데이터를 먼저 로드해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                        return;
+                    }
+
+                    int rowCount = _dataManager.CscanLine.GetLength(0);
+                    int colCount = _dataManager.CscanLine.GetLength(1);
+
+                    // 기준 인덱스가 유효한 범위인지 확인
+                    if (referenceIndex < 0 || referenceIndex >= rowCount)
+                    {
+                        System.Windows.MessageBox.Show($"기준 데이터 인덱스는 0에서 {rowCount - 1} 사이여야 합니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+
+                    // 데이터 처리 로직 (Envelope 기반)
+                    int[,] processedArray = ProcessCScanData(_dataManager.CscanLine, referenceIndex, intensity);
+
+                    // 처리된 데이터로 업데이트
+                    _dataManager.CscanLine = processedArray;
+
+                    // 플롯 업데이트
+                    UpdateCScanPlotWithProcessedData(processedArray);
+
+                    System.Windows.MessageBox.Show(
+                        $"C Scan 데이터 처리 완료\n기준 데이터 인덱스: {referenceIndex}\nIntensity: {intensity:F2}",
+                        "성공",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+                else
+                {
+                    System.Windows.MessageBox.Show("B Scan 또는 C Scan 탭에서만 Data Process를 사용할 수 있습니다.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
 
                 // Max Voltage 값 업데이트
                 UpdateMaxVoltage();
-
-                System.Windows.MessageBox.Show(
-                    $"데이터 처리 완료\n기준 데이터 인덱스: {referenceIndex}\nIntensity: {intensity:F2}",
-                    "성공",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
@@ -4768,6 +4827,77 @@ namespace SAT_TestProgram
                 for (int i = 0; i < colCount; i++)
                 {
                     currentSignal[i] = bScanArray[row, i];
+                }
+
+                // 현재 신호의 Envelope 계산
+                double[] tempEnvelope = ComputeEnvelope(currentSignal);
+                (bool tempRst, int tempIndex) = GetFirstMax(tempEnvelope, intensity);
+
+                if (tempRst)
+                {
+                    // Shift 값 계산
+                    int shiftIndex = standardIndex - tempIndex;
+                    
+                    // 데이터를 Shift하여 복사
+                    int[] shiftedSignal = ShiftArrayWithZeroPadding(currentSignal, shiftIndex);
+                    for (int col = 0; col < colCount; col++)
+                    {
+                        processedArray[row, col] = shiftedSignal[col];
+                    }
+                }
+                else
+                {
+                    // 최대값을 찾을 수 없는 경우 0으로 채움
+                    for (int col = 0; col < colCount; col++)
+                    {
+                        processedArray[row, col] = 0;
+                    }
+                }
+            }
+
+            return processedArray;
+        }
+
+        /// <summary>
+        /// C Scan 데이터를 처리하는 메서드 (Envelope 기반)
+        /// </summary>
+        /// <param name="cScanArray">원본 C Scan 데이터</param>
+        /// <param name="referenceIndex">기준 데이터 인덱스</param>
+        /// <param name="intensity">신호 임계값</param>
+        /// <returns>처리된 C Scan 데이터</returns>
+        private int[,] ProcessCScanData(int[,] cScanArray, int referenceIndex, double intensity)
+        {
+            int rowCount = cScanArray.GetLength(0);
+            int colCount = cScanArray.GetLength(1);
+
+            // 결과 배열 생성
+            int[,] processedArray = new int[rowCount, colCount];
+
+            // 기준 신호의 Envelope 계산
+            int[] referenceSignal = new int[colCount];
+            for (int i = 0; i < colCount; i++)
+            {
+                referenceSignal[i] = cScanArray[referenceIndex, i];
+            }
+            double[] standardEnvelope = ComputeEnvelope(referenceSignal);
+
+            // 기준 신호의 첫 번째 최대값 인덱스 찾기
+            (bool standardRst, int standardIndex) = GetFirstMax(standardEnvelope, intensity);
+
+            if (!standardRst)
+            {
+                // 기준 신호에서 최대값을 찾을 수 없는 경우 원본 데이터 반환
+                return cScanArray;
+            }
+
+            // 각 행에 대해 데이터 처리
+            for (int row = 0; row < rowCount; row++)
+            {
+                // 현재 행의 신호 추출
+                int[] currentSignal = new int[colCount];
+                for (int i = 0; i < colCount; i++)
+                {
+                    currentSignal[i] = cScanArray[row, i];
                 }
 
                 // 현재 신호의 Envelope 계산
@@ -4852,6 +4982,41 @@ namespace SAT_TestProgram
                 };
 
                 UpdateBScanPlot(_bScanData);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"플롯 업데이트 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 처리된 데이터로 C Scan 플롯을 업데이트하는 메서드
+        /// </summary>
+        /// <param name="processedArray">처리된 C Scan 데이터</param>
+        private void UpdateCScanPlotWithProcessedData(int[,] processedArray)
+        {
+            try
+            {
+                if (processedArray == null || processedArray.Length == 0)
+                {
+                    return;
+                }
+
+                // 첫 번째 행을 기본 데이터로 사용하여 플롯 업데이트
+                float[] yData = new float[processedArray.GetLength(1)];
+                for (int i = 0; i < processedArray.GetLength(1); i++)
+                {
+                    yData[i] = processedArray[0, i];
+                }
+
+                _cScanData = new DataModel
+                {
+                    FileName = "Processed C Scan Data",
+                    YData = yData,
+                    DataNum = yData.Length
+                };
+
+                UpdateCScanPlot(_cScanData);
             }
             catch (Exception ex)
             {
