@@ -25,6 +25,8 @@ using Xceed.Wpf.Toolkit;
 using MathNet.Numerics;
 using MathNet.Numerics.IntegralTransforms;
 using System.Numerics;
+using System.Diagnostics;
+using Microsoft.WindowsAPICodePack.Dialogs;
 
 namespace SAT_TestProgram
 {
@@ -4430,65 +4432,218 @@ namespace SAT_TestProgram
         /// </summary>
         private async void BtnLoadCScanData_Click(object sender, RoutedEventArgs e)
         {
-            OpenFileDialog openFileDialog = new OpenFileDialog
+            try
             {
-                Filter = ConstValue.FileDialogs.CsvFilter,
-                FilterIndex = ConstValue.FileDialogs.DefaultFilterIndex
-            };
-
-            if (openFileDialog.ShowDialog() == true)
-            {
-                try
+                string directory = "";
+                // 폴더 선택 다이얼로그
+                var dlg = new CommonOpenFileDialog()
                 {
-                    // Clear previous data first
-                    _cScanData = null;
-                    plotCScan.Plot.Clear();
-                    plotCScan.Refresh();
+                    Title = "B Scan 데이터가 있는 폴더를 선택하세요",
+                    IsFolderPicker = true
+                };
 
-                    string fileName = System.IO.Path.GetFileNameWithoutExtension(openFileDialog.FileName);
-                    
-                    // C Scan 데이터를 2차원 배열로 로드
-                    int[,] cScanArray = ReadCsvToIntArray(openFileDialog.FileName);
-                    
-                    // DataManager의 CscanLine에 데이터 저장
-                    _dataManager.CscanLine = cScanArray;
-                    
-                    // C Scan 데이터를 DataModel로 변환하여 플롯에 표시
-                    // 첫 번째 행을 기본 데이터로 사용
-                    if (cScanArray.GetLength(0) > 0 && cScanArray.GetLength(1) > 0)
+                if (dlg.ShowDialog() == CommonFileDialogResult.Ok)
+                {
+                    directory = dlg.FileName;
+                    // TODO: selectedPath 사용
+                }
+
+                // 게이트 파일 선택 다이얼로그
+                OpenFileDialog gateFileDialog = new OpenFileDialog
+                {
+                    Title = "게이트 정보 파일을 선택하세요",
+                    Filter = "Text Files (*.txt)|*.txt|All Files (*.*)|*.*",
+                    FilterIndex = 1
+                };
+
+                if (gateFileDialog.ShowDialog() != true)
+                {
+                    return;
+                }
+
+                string gateinfoPath = gateFileDialog.FileName;
+
+                // 데이터 로드 시작
+                await LoadCScanDataFromDirectory(directory, gateinfoPath);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"C Scan 데이터 로드 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 디렉토리에서 C Scan 데이터를 로드하는 메서드
+        /// </summary>
+        /// <param name="directory">데이터 폴더 경로</param>
+        /// <param name="gateinfoPath">게이트 정보 파일 경로</param>
+        private async Task LoadCScanDataFromDirectory(string directory, string gateinfoPath)
+        {
+            try
+            {
+                // Clear previous data first
+                _cScanData = null;
+                plotCScan.Plot.Clear();
+                plotCScan.Refresh();
+
+                // 게이트 정보 로드
+                LoadGateInfo(gateinfoPath);
+
+                // CSV 파일들 찾기
+                string[] scanLineFiles = GetCsvFilesInDirectory(directory);
+
+                if (scanLineFiles.Length == 0)
+                {
+                    System.Windows.MessageBox.Show("선택한 폴더에 CSV 파일이 없습니다.", "알림", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // 병렬로 CSV 파일들 로드
+                int[][,] scanLines = new int[scanLineFiles.Length][,];
+
+                await Task.Run(() =>
+                {
+                    Parallel.For(0, scanLineFiles.Length, a =>
                     {
-                        float[] yData = new float[cScanArray.GetLength(1)];
-                        for (int i = 0; i < cScanArray.GetLength(1); i++)
+                        scanLines[a] = ReadCsvToIntArray(scanLineFiles[a]);
+                    });
+                });
+
+                // 이미지 크기 계산
+                int imageRow = scanLines.Length;
+                int imageCol = scanLines.Max(arr => arr.GetLength(0));
+                int frameCount = scanLines.Max(arr => arr.GetLength(1)) - _dataManager.FrontSkipFrame - _dataManager.EndSkipFrame;
+
+                // 비트맵 데이터 생성
+                int[,][] bmp = new int[imageRow, imageCol][];
+
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
+
+                await Task.Run(() =>
+                {
+                    Parallel.For(0, imageRow, y =>
+                    {
+                        for (int x = 0; x < imageCol; x++)
                         {
-                            yData[i] = cScanArray[0, i]; // 첫 번째 행 사용
+                            int targetX = (y % 2 == 0) ? x : (imageCol - 1 - x);
+                            bmp[y, targetX] = new int[frameCount];
+
+                            for (int t = 0; t < frameCount; t++)
+                            {
+                                try
+                                {
+                                    bmp[y, targetX][t] = scanLines[y][x, _dataManager.FrontSkipFrame + t];
+                                }
+                                catch
+                                {
+                                    bmp[y, targetX][t] = 0;
+                                }
+                            }
                         }
-                        
-                        _cScanData = new DataModel
+                    });
+                });
+
+                stopwatch.Stop();
+
+                // DataManager에 데이터 저장
+                _dataManager.bmp = bmp;
+
+                // 첫 번째 행을 기본 데이터로 사용하여 플롯 업데이트
+                if (imageRow > 0 && imageCol > 0 && frameCount > 0)
+                {
+                    float[] yData = new float[frameCount];
+                    for (int i = 0; i < frameCount; i++)
+                    {
+                        yData[i] = bmp[0, 0][i]; // 첫 번째 데이터 사용
+                    }
+
+                    _cScanData = new DataModel
+                    {
+                        FileName = $"C Scan Data ({imageRow}x{imageCol})",
+                        YData = yData,
+                        DataNum = yData.Length
+                    };
+
+                    UpdateCScanPlot(_cScanData);
+
+                    // 기준 데이터 인덱스를 중앙값으로 설정
+                    txtReferenceDataIndex.Text = (imageRow / 2).ToString();
+
+                    // Max Voltage 값 업데이트
+                    UpdateMaxVoltage();
+                }
+
+                System.Windows.MessageBox.Show(
+                    $"C Scan 데이터 로드 완료\n" +
+                    $"이미지 크기: {imageCol} x {imageRow}\n" +
+                    $"프레임 수: {frameCount}\n" +
+                    $"처리 시간: {stopwatch.Elapsed.TotalSeconds:F2}초\n" +
+                    $"게이트 수: {_dataManager.Gates.Count}",
+                    "성공",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"C Scan 데이터 로드 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 게이트 정보를 로드하는 메서드
+        /// </summary>
+        /// <param name="gateinfoPath">게이트 정보 파일 경로</param>
+        private void LoadGateInfo(string gateinfoPath)
+        {
+            try
+            {
+                string[] lines = File.ReadAllLines(gateinfoPath);
+
+                if (lines.Length >= 2)
+                {
+                    _dataManager.FrontSkipFrame = int.Parse(lines[0]);
+                    _dataManager.EndSkipFrame = int.Parse(lines[1]);
+
+                    _dataManager.Gates.Clear();
+                    for (int i = 2; i < lines.Length; i++)
+                    {
+                        string line = lines[i].Trim();
+                        if (string.IsNullOrWhiteSpace(line)) continue;
+
+                        string[] parts = line.Split(',');
+                        if (parts.Length != 2) continue;
+
+                        if (int.TryParse(parts[0], out int start) && int.TryParse(parts[1], out int end))
                         {
-                            FileName = fileName,
-                            YData = yData,
-                            DataNum = yData.Length
-                        };
-                        
-                        UpdateCScanPlot(_cScanData);
-                        
-                        // 기준 데이터 인덱스를 중앙값으로 설정
-                        txtReferenceDataIndex.Text = (cScanArray.GetLength(0) / 2).ToString();
-                        
-                        // Max Voltage 값 업데이트
-                        UpdateMaxVoltage();
-                        
-                        System.Windows.MessageBox.Show(
-                            $"C Scan 데이터 로드 완료\n행: {cScanArray.GetLength(0)}, 열: {cScanArray.GetLength(1)}",
-                            "성공",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
+                            _dataManager.Gates.Add(new Gate(start - _dataManager.FrontSkipFrame, end - _dataManager.FrontSkipFrame));
+                        }
                     }
                 }
-                catch (Exception ex)
-                {
-                    System.Windows.MessageBox.Show($"C Scan 데이터 로드 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"게이트 정보 로드 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// 디렉토리에서 CSV 파일들을 찾는 메서드
+        /// </summary>
+        /// <param name="directory">검색할 디렉토리</param>
+        /// <returns>CSV 파일 경로 배열</returns>
+        private string[] GetCsvFilesInDirectory(string directory)
+        {
+            try
+            {
+                return Directory.GetFiles(directory, "*.csv")
+                              .OrderBy(f => f)
+                              .ToArray();
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"CSV 파일 검색 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                return new string[0];
             }
         }
 
@@ -4501,6 +4656,10 @@ namespace SAT_TestProgram
             {
                 _cScanData = null;
                 _dataManager.CscanLine = new int[,] { };
+                _dataManager.bmp = new int[0, 0][];
+                _dataManager.Gates.Clear();
+                _dataManager.FrontSkipFrame = 0;
+                _dataManager.EndSkipFrame = 0;
                 plotCScan.Plot.Clear();
                 plotCScan.Refresh();
                 System.Windows.MessageBox.Show("C Scan 데이터가 클리어되었습니다.", "클리어 완료", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -4736,15 +4895,15 @@ namespace SAT_TestProgram
                 }
                 else if (isCScan)
                 {
-                    // C Scan 데이터 처리
-                    if (_dataManager.CscanLine == null || _dataManager.CscanLine.Length == 0)
+                    // C Scan 데이터 처리 (bmp 데이터 사용)
+                    if (_dataManager.bmp == null || _dataManager.bmp.Length == 0)
                     {
                         System.Windows.MessageBox.Show("C Scan 데이터를 먼저 로드해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
                         return;
                     }
 
-                    int rowCount = _dataManager.CscanLine.GetLength(0);
-                    int colCount = _dataManager.CscanLine.GetLength(1);
+                    int rowCount = _dataManager.bmp.GetLength(0);
+                    int colCount = _dataManager.bmp.GetLength(1);
 
                     // 기준 인덱스가 유효한 범위인지 확인
                     if (referenceIndex < 0 || referenceIndex >= rowCount)
@@ -4754,13 +4913,29 @@ namespace SAT_TestProgram
                     }
 
                     // 데이터 처리 로직 (Envelope 기반)
-                    int[,] processedArray = ProcessCScanData(_dataManager.CscanLine, referenceIndex, intensity);
+                    int[,][] processedBmp = ProcessCScanBmpData(_dataManager.bmp, referenceIndex, intensity);
 
                     // 처리된 데이터로 업데이트
-                    _dataManager.CscanLine = processedArray;
+                    _dataManager.bmp = processedBmp;
 
-                    // 플롯 업데이트
-                    UpdateCScanPlotWithProcessedData(processedArray);
+                    // 플롯 업데이트 (첫 번째 데이터 사용)
+                    if (rowCount > 0 && colCount > 0 && _dataManager.bmp[0, 0] != null)
+                    {
+                        float[] yData = new float[_dataManager.bmp[0, 0].Length];
+                        for (int i = 0; i < _dataManager.bmp[0, 0].Length; i++)
+                        {
+                            yData[i] = _dataManager.bmp[0, 0][i];
+                        }
+
+                        _cScanData = new DataModel
+                        {
+                            FileName = $"Processed C Scan Data ({rowCount}x{colCount})",
+                            YData = yData,
+                            DataNum = yData.Length
+                        };
+
+                        UpdateCScanPlot(_cScanData);
+                    }
 
                     System.Windows.MessageBox.Show(
                         $"C Scan 데이터 처리 완료\n기준 데이터 인덱스: {referenceIndex}\nIntensity: {intensity:F2}",
@@ -4927,6 +5102,73 @@ namespace SAT_TestProgram
             }
 
             return processedArray;
+        }
+
+        /// <summary>
+        /// C Scan bmp 데이터를 처리하는 메서드 (Envelope 기반)
+        /// </summary>
+        /// <param name="bmpData">원본 C Scan bmp 데이터</param>
+        /// <param name="referenceIndex">기준 데이터 인덱스</param>
+        /// <param name="intensity">신호 임계값</param>
+        /// <returns>처리된 C Scan bmp 데이터</returns>
+        private int[,][] ProcessCScanBmpData(int[,][] bmpData, int referenceIndex, double intensity)
+        {
+            int rowCount = bmpData.GetLength(0);
+            int colCount = bmpData.GetLength(1);
+
+            // 결과 배열 생성
+            int[,][] processedBmp = new int[rowCount, colCount][];
+
+            // 기준 신호의 Envelope 계산 (첫 번째 열 사용)
+            if (colCount > 0 && bmpData[referenceIndex, 0] != null)
+            {
+                int[] referenceSignal = bmpData[referenceIndex, 0];
+                double[] standardEnvelope = ComputeEnvelope(referenceSignal);
+
+                // 기준 신호의 첫 번째 최대값 인덱스 찾기
+                (bool standardRst, int standardIndex) = GetFirstMax(standardEnvelope, intensity);
+
+                if (!standardRst)
+                {
+                    // 기준 신호에서 최대값을 찾을 수 없는 경우 원본 데이터 반환
+                    return bmpData;
+                }
+
+                // 각 행에 대해 데이터 처리
+                for (int row = 0; row < rowCount; row++)
+                {
+                    for (int col = 0; col < colCount; col++)
+                    {
+                        if (bmpData[row, col] != null)
+                        {
+                            // 현재 신호의 Envelope 계산
+                            double[] tempEnvelope = ComputeEnvelope(bmpData[row, col]);
+                            (bool tempRst, int tempIndex) = GetFirstMax(tempEnvelope, intensity);
+
+                            if (tempRst)
+                            {
+                                // Shift 값 계산
+                                int shiftIndex = standardIndex - tempIndex;
+                                
+                                // 데이터를 Shift하여 복사
+                                int[] shiftedSignal = ShiftArrayWithZeroPadding(bmpData[row, col], shiftIndex);
+                                processedBmp[row, col] = shiftedSignal;
+                            }
+                            else
+                            {
+                                // 최대값을 찾을 수 없는 경우 0으로 채움
+                                processedBmp[row, col] = new int[bmpData[row, col].Length];
+                            }
+                        }
+                        else
+                        {
+                            processedBmp[row, col] = new int[0];
+                        }
+                    }
+                }
+            }
+
+            return processedBmp;
         }
 
         /// <summary>

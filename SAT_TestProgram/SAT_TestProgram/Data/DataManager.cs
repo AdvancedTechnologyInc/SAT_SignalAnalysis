@@ -115,6 +115,26 @@ namespace SAT_TestProgram.Data
         public double[,] BscanEnvelope = new double[,] { };
 
         /// <summary>
+        /// C Scan 비트맵 데이터
+        /// </summary>
+        public int[,][] bmp = new int[0, 0][];
+
+        /// <summary>
+        /// 게이트 정보 리스트
+        /// </summary>
+        public List<Gate> Gates { get; set; } = new List<Gate>();
+
+        /// <summary>
+        /// 프론트 스킵 프레임
+        /// </summary>
+        public int FrontSkipFrame { get; set; } = 0;
+
+        /// <summary>
+        /// 엔드 스킵 프레임
+        /// </summary>
+        public int EndSkipFrame { get; set; } = 0;
+
+        /// <summary>
         /// B Scan Envelope를 비트맵으로 변환하여 저장
         /// </summary>
         /// <param name="filePath">저장할 파일 경로</param>

@@ -398,57 +398,42 @@
                     </Grid.RowDefinitions>
 
                     <!-- B Scan Controls -->
-                    <Grid Grid.Row="0" 
-                          Margin="10,5,5,0"
-                          Background="#F5F5F5">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        
-                        <!-- First Row -->
-                        <StackPanel Grid.Row="0" 
-                                  Orientation="Horizontal" 
-                                  Margin="5,5,5,2">
-                            <TextBlock Text="B Scan Data View" 
-                                     FontWeight="Bold" 
-                                     VerticalAlignment="Center" 
-                                     Margin="5,0"/>
-                            <Button x:Name="btnLoadBScanData"
-                                    Content="Load B Scan Data"
-                                    Margin="15,0,15,0"
-                                    Padding="5,2"
-                                    Click="BtnLoadBScanData_Click"/>
-                            <Button x:Name="btnClearBScanData"
-                                    Content="Clear B Scan Data"
-                                    Margin="5,0,15,0"
-                                    Padding="5,2"
-                                    Click="BtnClearBScanData_Click"/>
-                        </StackPanel>
-                        
-                        <!-- Second Row -->
-                        <StackPanel Grid.Row="1" 
-                                  Orientation="Horizontal" 
-                                  Margin="5,2,5,5">
-                            <Button x:Name="btnBScanEnvelope"
-                                    Content="B Scan Envelope"
-                                    Margin="5,0,15,0"
-                                    Padding="5,2"
-                                    Click="BtnBScanEnvelope_Click"/>
-                            <Button x:Name="btnSaveBScanBitmap"
-                                    Content="Save as Bitmap"
-                                    Margin="5,0,15,0"
-                                    Padding="5,2"
-                                    Click="BtnSaveBScanBitmap_Click"/>
-                            <CheckBox x:Name="chkShowLegendBScan"
-                                    Content="범례 표시"
-                                    Margin="15,0,15,0"
-                                    IsChecked="True"
-                                    VerticalAlignment="Center"
-                                    Checked="ChkShowLegendBScan_Checked"
-                                    Unchecked="ChkShowLegendBScan_Unchecked"/>
-                        </StackPanel>
-                    </Grid>
+                    <StackPanel Grid.Row="0" 
+                              Orientation="Horizontal" 
+                              Margin="10,5,5,0"
+                              Background="#F5F5F5">
+                        <TextBlock Text="B Scan Data View" 
+                                 FontWeight="Bold" 
+                                 VerticalAlignment="Center" 
+                                 Margin="5,0"/>
+                        <Button x:Name="btnLoadBScanData"
+                                Content="Load B Scan Data"
+                                Margin="15,0,15,0"
+                                Padding="5,2"
+                                Click="BtnLoadBScanData_Click"/>
+                        <Button x:Name="btnClearBScanData"
+                                Content="Clear B Scan Data"
+                                Margin="5,0,15,0"
+                                Padding="5,2"
+                                Click="BtnClearBScanData_Click"/>
+                        <Button x:Name="btnBScanEnvelope"
+                                Content="B Scan Envelope"
+                                Margin="5,0,15,0"
+                                Padding="5,2"
+                                Click="BtnBScanEnvelope_Click"/>
+                        <Button x:Name="btnSaveBScanBitmap"
+                                Content="Save as Bitmap"
+                                Margin="5,0,15,0"
+                                Padding="5,2"
+                                Click="BtnSaveBScanBitmap_Click"/>
+                        <CheckBox x:Name="chkShowLegendBScan"
+                                Content="범례 표시"
+                                Margin="15,0,15,0"
+                                IsChecked="True"
+                                VerticalAlignment="Center"
+                                Checked="ChkShowLegendBScan_Checked"
+                                Unchecked="ChkShowLegendBScan_Unchecked"/>
+                    </StackPanel>
 
                     <!-- B Scan Graph -->
                     <Border Grid.Row="1" 
@@ -497,7 +482,7 @@
                                 Content="Load C Scan Data"
                                 Margin="15,0,15,0"
                                 Padding="5,2"
-                                Click="BtnLoadCScanData_Click"/>
+                                Click="BtnLoadCScanData_Click" Height="22" VerticalAlignment="Top"/>
                         <Button x:Name="btnClearCScanData"
                                 Content="Clear C Scan Data"
                                 Margin="5,0,15,0"
