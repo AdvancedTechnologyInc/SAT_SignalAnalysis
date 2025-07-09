@@ -37,10 +37,12 @@ namespace SAT_TestProgram
         private DataModel _rawSignalData;
         private DataModel _voidSignalData;
         private DataModel _bScanData;
+        private DataModel _cScanData;
         private ObservableCollection<string> _appliedAlgorithms;
         private ScatterPlot rawScatter;
         private ScatterPlot voidScatter;
         private ScatterPlot bScanScatter;
+        private ScatterPlot cScanScatter;
 
         // Gate Editor 관련 필드
         private int _selectedGateIndex = -1;
@@ -58,6 +60,7 @@ namespace SAT_TestProgram
             _rawSignalData = null;
             _voidSignalData = null;
             _bScanData = null;
+            _cScanData = null;
             _appliedAlgorithms = new ObservableCollection<string>();
 
             // Bind the algorithms list
@@ -70,6 +73,7 @@ namespace SAT_TestProgram
             plotUpper.MouseDown += Plot_MouseDown;
             plotLower.MouseDown += Plot_MouseDown;
             plotBScan.MouseDown += Plot_MouseDown;
+            plotCScan.MouseDown += Plot_MouseDown;
 
             // Initialize Gate Editor
             InitializeGateEditor();
@@ -78,11 +82,13 @@ namespace SAT_TestProgram
             plotUpper.MouseMove += Plot_MouseMove;
             plotLower.MouseMove += Plot_MouseMove;
             plotBScan.MouseMove += Plot_MouseMove;
+            plotCScan.MouseMove += Plot_MouseMove;
             
             // Add mouse leave event handlers to clear position info
             plotUpper.MouseLeave += Plot_MouseLeave;
             plotLower.MouseLeave += Plot_MouseLeave;
             plotBScan.MouseLeave += Plot_MouseLeave;
+            plotCScan.MouseLeave += Plot_MouseLeave;
         }
 
         private void InitializePlots()
@@ -110,6 +116,12 @@ namespace SAT_TestProgram
                 plotBScan.Plot.XLabel("Index");
                 plotBScan.Plot.YLabel("Voltage");
                 plotBScan.Refresh();
+
+                // Initialize C Scan plot
+                plotCScan.Plot.Title("C Scan Data");
+                plotCScan.Plot.XLabel("Index");
+                plotCScan.Plot.YLabel("Voltage");
+                plotCScan.Refresh();
 
                 // Set initial axis limits
                 InitializeAxisLimits();
@@ -4400,6 +4412,237 @@ namespace SAT_TestProgram
                 line += $",{valueSelector(gateData)}";
             }
             writer.WriteLine(line);
+        }
+
+        #endregion
+
+        #region C Scan Methods
+
+        /// <summary>
+        /// C Scan 데이터 로드 버튼 클릭 이벤트
+        /// </summary>
+        private async void BtnLoadCScanData_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                Filter = ConstValue.FileDialogs.CsvFilter,
+                FilterIndex = ConstValue.FileDialogs.DefaultFilterIndex
+            };
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    // Clear previous data first
+                    _cScanData = null;
+                    plotCScan.Plot.Clear();
+                    plotCScan.Refresh();
+
+                    // Load C Scan data
+                    int[,] cScanArray = ReadCsvToIntArray(openFileDialog.FileName);
+                    if (cScanArray != null && cScanArray.Length > 0)
+                    {
+                        _cScanData = new DataModel
+                        {
+                            DataNum = cScanArray.Length,
+                            DataIndex = Enumerable.Range(0, cScanArray.Length).ToArray(),
+                            Second = new double[cScanArray.Length],
+                            Volt = new double[cScanArray.Length],
+                            XData = new float[cScanArray.Length],
+                            YData = new float[cScanArray.Length]
+                        };
+
+                        // Convert 2D array to 1D array for display
+                        int index = 0;
+                        for (int i = 0; i < cScanArray.GetLength(0); i++)
+                        {
+                            for (int j = 0; j < cScanArray.GetLength(1); j++)
+                            {
+                                _cScanData.XData[index] = index;
+                                _cScanData.YData[index] = cScanArray[i, j];
+                                _cScanData.Second[index] = index;
+                                _cScanData.Volt[index] = cScanArray[i, j];
+                                index++;
+                            }
+                        }
+
+                        // Set C Scan data in DataManager
+                        _dataManager.SetCScanData(_cScanData);
+                        UpdateCScanPlot(_cScanData);
+                        System.Windows.MessageBox.Show($"C Scan 데이터가 성공적으로 로드되었습니다.\n파일: {openFileDialog.FileName}", 
+                            "로드 완료", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show($"C Scan 데이터 로드 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        /// <summary>
+        /// C Scan 데이터 클리어 버튼 클릭 이벤트
+        /// </summary>
+        private void BtnClearCScanData_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                _cScanData = null;
+                _dataManager.ClearCScanData();
+                plotCScan.Plot.Clear();
+                plotCScan.Refresh();
+                System.Windows.MessageBox.Show("C Scan 데이터가 클리어되었습니다.", "클리어 완료", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"C Scan 데이터 클리어 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// C Scan Envelope 버튼 클릭 이벤트
+        /// </summary>
+        private void BtnCScanEnvelope_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (_cScanData == null)
+                {
+                    System.Windows.MessageBox.Show("C Scan 데이터가 로드되지 않았습니다.", "알림", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // C Scan Envelope 처리 로직
+                // TODO: 실제 C Scan Envelope 알고리즘 구현
+                System.Windows.MessageBox.Show("C Scan Envelope 기능이 구현되지 않았습니다.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"C Scan Envelope 처리 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// C Scan 비트맵 저장 버튼 클릭 이벤트
+        /// </summary>
+        private void BtnSaveCScanBitmap_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (_cScanData == null)
+                {
+                    System.Windows.MessageBox.Show("저장할 C Scan 데이터가 없습니다.", "알림", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                SaveFileDialog saveFileDialog = new SaveFileDialog
+                {
+                    Filter = "PNG Files (*.png)|*.png|JPEG Files (*.jpg)|*.jpg|All Files (*.*)|*.*",
+                    FilterIndex = 1,
+                    DefaultExt = "png",
+                    FileName = $"CScan_{DateTime.Now:yyyyMMdd_HHmmss}"
+                };
+
+                if (saveFileDialog.ShowDialog() == true)
+                {
+                    // C Scan 플롯을 비트맵으로 저장
+                    plotCScan.Plot.SaveFig(saveFileDialog.FileName);
+                    System.Windows.MessageBox.Show($"C Scan 이미지가 성공적으로 저장되었습니다.\n파일: {saveFileDialog.FileName}", 
+                        "저장 완료", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"C Scan 이미지 저장 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// C Scan 범례 표시 체크박스 체크 이벤트
+        /// </summary>
+        private void ChkShowLegendCScan_Checked(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (plotCScan != null && plotCScan.Plot != null)
+                {
+                    plotCScan.Plot.Legend(true);
+                    plotCScan.Refresh();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"C Scan 범례 표시 설정 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// C Scan 범례 표시 체크박스 해제 이벤트
+        /// </summary>
+        private void ChkShowLegendCScan_Unchecked(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (plotCScan != null && plotCScan.Plot != null)
+                {
+                    plotCScan.Plot.Legend(false);
+                    plotCScan.Refresh();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"C Scan 범례 숨김 설정 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// C Scan 플롯 업데이트
+        /// </summary>
+        /// <param name="data">표시할 데이터</param>
+        private void UpdateCScanPlot(DataModel data)
+        {
+            try
+            {
+                if (data == null || data.YData == null || data.YData.Length == 0)
+                {
+                    System.Windows.MessageBox.Show("유효하지 않은 C Scan 데이터입니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Clear previous plot
+                plotCScan.Plot.Clear();
+
+                // Create scatter plot for C Scan data
+                // Convert float arrays to double arrays for ScottPlot
+                double[] xData = data.XData.Select(x => (double)x).ToArray();
+                double[] yData = data.YData.Select(y => (double)y).ToArray();
+                
+                cScanScatter = plotCScan.Plot.AddScatter(xData, yData, 
+                    label: "C Scan Data", 
+                    color: System.Drawing.Color.Blue, 
+                    markerSize: 2);
+
+                // Set axis labels and title
+                plotCScan.Plot.Title("C Scan Data");
+                plotCScan.Plot.XLabel("Index");
+                plotCScan.Plot.YLabel("Value");
+
+                // Auto-fit the plot
+                plotCScan.Plot.AxisAuto();
+
+                // Show legend if checked
+                if (chkShowLegendCScan.IsChecked == true)
+                {
+                    plotCScan.Plot.Legend(true);
+                }
+
+                // Refresh the plot
+                plotCScan.Refresh();
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"C Scan 플롯 업데이트 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         #endregion

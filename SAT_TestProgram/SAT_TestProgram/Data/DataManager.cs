@@ -60,6 +60,11 @@ namespace SAT_TestProgram.Data
         public DataModel VoidSignalData { get; private set; }
 
         /// <summary>
+        /// C Scan 데이터
+        /// </summary>
+        public DataModel CScanData { get; private set; }
+
+        /// <summary>
         /// 데이터가 로드되었을 때 발생하는 이벤트
         /// </summary>
         public event EventHandler<DataModel> OnDataLoaded;
@@ -426,6 +431,27 @@ namespace SAT_TestProgram.Data
             {
                 CurrentData = null;
             }
+        }
+
+        /// <summary>
+        /// C Scan 데이터를 설정
+        /// </summary>
+        /// <param name="data">C Scan 데이터</param>
+        public void SetCScanData(DataModel data)
+        {
+            CScanData = data;
+            if (data != null)
+            {
+                OnDataLoaded?.Invoke(this, data);
+            }
+        }
+
+        /// <summary>
+        /// C Scan 데이터를 클리어
+        /// </summary>
+        public void ClearCScanData()
+        {
+            CScanData = null;
         }
 
         /// <summary>

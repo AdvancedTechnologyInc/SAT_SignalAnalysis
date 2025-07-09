@@ -410,6 +410,78 @@
                     </StackPanel>
                 </Grid>
             </TabItem>
+
+            <!-- C Scan Data Tab -->
+            <TabItem Header="C Scan Data">
+                <Grid Background="White">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- C Scan Controls -->
+                    <StackPanel Grid.Row="0" 
+                              Orientation="Horizontal" 
+                              Margin="10,5,5,0"
+                              Background="#F5F5F5">
+                        <TextBlock Text="C Scan Data View" 
+                                 FontWeight="Bold" 
+                                 VerticalAlignment="Center" 
+                                 Margin="5,0"/>
+                        <Button x:Name="btnLoadCScanData"
+                                Content="Load C Scan Data"
+                                Margin="15,0,15,0"
+                                Padding="5,2"
+                                Click="BtnLoadCScanData_Click"/>
+                        <Button x:Name="btnClearCScanData"
+                                Content="Clear C Scan Data"
+                                Margin="5,0,15,0"
+                                Padding="5,2"
+                                Click="BtnClearCScanData_Click"/>
+                        <Button x:Name="btnCScanEnvelope"
+                                Content="C Scan Envelope"
+                                Margin="5,0,15,0"
+                                Padding="5,2"
+                                Click="BtnCScanEnvelope_Click"/>
+                        <Button x:Name="btnSaveCScanBitmap"
+                                Content="Save as Bitmap"
+                                Margin="5,0,15,0"
+                                Padding="5,2"
+                                Click="BtnSaveCScanBitmap_Click"/>
+                        <CheckBox x:Name="chkShowLegendCScan"
+                                Content="범례 표시"
+                                Margin="15,0,15,0"
+                                IsChecked="True"
+                                VerticalAlignment="Center"
+                                Checked="ChkShowLegendCScan_Checked"
+                                Unchecked="ChkShowLegendCScan_Unchecked"/>
+                    </StackPanel>
+
+                    <!-- C Scan Graph -->
+                    <Border Grid.Row="1" 
+                           Margin="5" 
+                           BorderBrush="LightGray" 
+                           BorderThickness="1">
+                        <ScottPlot:WpfPlot x:Name="plotCScan"/>
+                    </Border>
+                    
+                    <!-- C Scan Mouse Position Info -->
+                    <StackPanel Grid.Row="2" 
+                              Orientation="Horizontal" 
+                              Margin="10,2,5,5"
+                              Background="#F0F0F0">
+                        <TextBlock Text="Mouse Position: " 
+                                 FontWeight="Bold" 
+                                 VerticalAlignment="Center" 
+                                 Margin="5,0"/>
+                        <TextBlock x:Name="txtCScanMousePosition" 
+                                 Text="Index: --, Value: --" 
+                                 VerticalAlignment="Center" 
+                                 Margin="5,0"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
         </TabControl>
 
         <!-- Right Section - Scale Controls -->
