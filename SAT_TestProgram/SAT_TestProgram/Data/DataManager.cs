@@ -65,6 +65,11 @@ namespace SAT_TestProgram.Data
         public DataModel CScanData { get; private set; }
 
         /// <summary>
+        /// 기준 데이터의 최대 전압값 (Intensity)
+        /// </summary>
+        public double MaxVoltage { get; set; } = 0.0;
+
+        /// <summary>
         /// 데이터가 로드되었을 때 발생하는 이벤트
         /// </summary>
         public event EventHandler<DataModel> OnDataLoaded;

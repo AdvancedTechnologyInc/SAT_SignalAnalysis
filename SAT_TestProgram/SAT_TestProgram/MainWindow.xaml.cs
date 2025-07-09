@@ -379,6 +379,12 @@ namespace SAT_TestProgram
                         
                         UpdateBScanPlot(_bScanData);
                         
+                        // 기준 데이터 인덱스를 중앙값으로 설정
+                        txtReferenceDataIndex.Text = (bScanArray.GetLength(0) / 2).ToString();
+                        
+                        // Max Voltage 값 업데이트
+                        UpdateMaxVoltage();
+                        
                         System.Windows.MessageBox.Show(
                             $"B Scan 데이터 로드 완료\n행: {bScanArray.GetLength(0)}, 열: {bScanArray.GetLength(1)}",
                             "성공",
@@ -4642,6 +4648,266 @@ namespace SAT_TestProgram
             catch (Exception ex)
             {
                 System.Windows.MessageBox.Show($"C Scan 플롯 업데이트 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        #endregion
+
+        #region Data Process Methods
+
+        /// <summary>
+        /// Data Process 버튼 클릭 이벤트
+        /// </summary>
+        private void BtnDataProcess_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // B Scan 데이터가 로드되어 있는지 확인
+                if (_dataManager.BscanLine == null || _dataManager.BscanLine.Length == 0)
+                {
+                    System.Windows.MessageBox.Show("B Scan 데이터를 먼저 로드해주세요.", "알림", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                // 기준 데이터 인덱스 가져오기
+                if (!int.TryParse(txtReferenceDataIndex.Text, out int referenceIndex))
+                {
+                    System.Windows.MessageBox.Show("유효한 기준 데이터 인덱스를 입력해주세요.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                int rowCount = _dataManager.BscanLine.GetLength(0);
+                int colCount = _dataManager.BscanLine.GetLength(1);
+
+                // 기준 인덱스가 유효한 범위인지 확인
+                if (referenceIndex < 0 || referenceIndex >= rowCount)
+                {
+                    System.Windows.MessageBox.Show($"기준 데이터 인덱스는 0에서 {rowCount - 1} 사이여야 합니다.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // 데이터 처리 로직
+                int[,] processedArray = ProcessBScanData(_dataManager.BscanLine, referenceIndex);
+
+                // 처리된 데이터로 업데이트
+                _dataManager.BscanLine = processedArray;
+
+                // 플롯 업데이트
+                UpdateBScanPlotWithProcessedData(processedArray);
+
+                // Max Voltage 값 업데이트
+                UpdateMaxVoltage();
+
+                System.Windows.MessageBox.Show(
+                    $"데이터 처리 완료\n기준 데이터 인덱스: {referenceIndex}",
+                    "성공",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show(
+                    $"데이터 처리 중 오류 발생: {ex.Message}",
+                    "오류",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// B Scan 데이터를 처리하는 메서드
+        /// </summary>
+        /// <param name="bScanArray">원본 B Scan 데이터</param>
+        /// <param name="referenceIndex">기준 데이터 인덱스</param>
+        /// <returns>처리된 B Scan 데이터</returns>
+        private int[,] ProcessBScanData(int[,] bScanArray, int referenceIndex)
+        {
+            int rowCount = bScanArray.GetLength(0);
+            int colCount = bScanArray.GetLength(1);
+
+            // 결과 배열 생성
+            int[,] processedArray = new int[rowCount, colCount];
+
+            // 기준 데이터의 30% 구간에서 최대값 위치 찾기
+            int front30Percent = (int)(colCount * 0.3);
+            int maxIndexInReference = FindMaxIndexInRange(bScanArray, referenceIndex, 0, front30Percent);
+
+            // 각 행에 대해 데이터 처리
+            for (int row = 0; row < rowCount; row++)
+            {
+                // 현재 행의 30% 구간에서 최대값 위치 찾기
+                int maxIndexInCurrentRow = FindMaxIndexInRange(bScanArray, row, 0, front30Percent);
+
+                // Shift 값 계산 (기준 행의 최대값 위치 - 현재 행의 최대값 위치)
+                int shift = maxIndexInReference - maxIndexInCurrentRow;
+
+                // 데이터를 Shift하여 복사
+                for (int col = 0; col < colCount; col++)
+                {
+                    int shiftedCol = col + shift;
+                    
+                    // 범위를 벗어나는 경우 처리
+                    if (shiftedCol < 0)
+                    {
+                        // 왼쪽으로 벗어나는 경우: 첫 번째 값으로 채움
+                        processedArray[row, col] = bScanArray[row, 0];
+                    }
+                    else if (shiftedCol >= colCount)
+                    {
+                        // 오른쪽으로 벗어나는 경우: 마지막 값으로 채움
+                        processedArray[row, col] = bScanArray[row, colCount - 1];
+                    }
+                    else
+                    {
+                        // 정상 범위 내의 경우: Shift된 위치의 값 사용
+                        processedArray[row, col] = bScanArray[row, shiftedCol];
+                    }
+                }
+            }
+
+            return processedArray;
+        }
+
+        /// <summary>
+        /// 특정 행의 지정된 범위에서 최대값의 인덱스를 찾는 메서드
+        /// </summary>
+        /// <param name="bScanArray">B Scan 데이터 배열</param>
+        /// <param name="row">검색할 행 인덱스</param>
+        /// <param name="startCol">시작 열 인덱스</param>
+        /// <param name="endCol">끝 열 인덱스</param>
+        /// <returns>최대값의 인덱스</returns>
+        private int FindMaxIndexInRange(int[,] bScanArray, int row, int startCol, int endCol)
+        {
+            int maxIndex = startCol;
+            int maxValue = bScanArray[row, startCol];
+
+            for (int col = startCol + 1; col < endCol; col++)
+            {
+                if (bScanArray[row, col] > maxValue)
+                {
+                    maxValue = bScanArray[row, col];
+                    maxIndex = col;
+                }
+            }
+
+            return maxIndex;
+        }
+
+        /// <summary>
+        /// 처리된 데이터로 B Scan 플롯을 업데이트하는 메서드
+        /// </summary>
+        /// <param name="processedArray">처리된 B Scan 데이터</param>
+        private void UpdateBScanPlotWithProcessedData(int[,] processedArray)
+        {
+            try
+            {
+                if (processedArray == null || processedArray.Length == 0)
+                {
+                    return;
+                }
+
+                // 첫 번째 행을 기본 데이터로 사용하여 플롯 업데이트
+                float[] yData = new float[processedArray.GetLength(1)];
+                for (int i = 0; i < processedArray.GetLength(1); i++)
+                {
+                    yData[i] = processedArray[0, i];
+                }
+
+                _bScanData = new DataModel
+                {
+                    FileName = "Processed B Scan Data",
+                    YData = yData,
+                    DataNum = yData.Length
+                };
+
+                UpdateBScanPlot(_bScanData);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"플롯 업데이트 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        #endregion
+
+        #region Max Voltage Methods
+
+        /// <summary>
+        /// Max Voltage 텍스트 박스 변경 이벤트
+        /// </summary>
+        private void TxtMaxVoltage_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            try
+            {
+                if (_dataManager == null)
+                {
+                    return;
+                }
+
+                if (double.TryParse(txtMaxVoltage.Text, out double maxVoltage))
+                {
+                    _dataManager.MaxVoltage = maxVoltage;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Max Voltage 값 설정 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Max Voltage 값을 업데이트하는 메서드
+        /// </summary>
+        private void UpdateMaxVoltage()
+        {
+            try
+            {
+                if (_dataManager == null)
+                {
+                    txtMaxVoltage.Text = "0";
+                    return;
+                }
+
+                if (_dataManager.BscanLine == null || _dataManager.BscanLine.Length == 0)
+                {
+                    txtMaxVoltage.Text = "0";
+                    return;
+                }
+
+                // 기준 데이터 인덱스 가져오기
+                if (!int.TryParse(txtReferenceDataIndex.Text, out int referenceIndex))
+                {
+                    txtMaxVoltage.Text = "0";
+                    return;
+                }
+
+                int rowCount = _dataManager.BscanLine.GetLength(0);
+                int colCount = _dataManager.BscanLine.GetLength(1);
+
+                // 기준 인덱스가 유효한 범위인지 확인
+                if (referenceIndex < 0 || referenceIndex >= rowCount)
+                {
+                    txtMaxVoltage.Text = "0";
+                    return;
+                }
+
+                // 기준 데이터의 30% 구간에서 최대값 찾기
+                int front30Percent = (int)(colCount * 0.3);
+                int maxIndex = FindMaxIndexInRange(_dataManager.BscanLine, referenceIndex, 0, front30Percent);
+                
+                // 최대값 가져오기
+                double maxVoltage = _dataManager.BscanLine[referenceIndex, maxIndex];
+                
+                // DataManager에 저장
+                _dataManager.MaxVoltage = maxVoltage;
+                
+                // UI 업데이트
+                txtMaxVoltage.Text = maxVoltage.ToString("F2");
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show($"Max Voltage 업데이트 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                txtMaxVoltage.Text = "0";
             }
         }
 

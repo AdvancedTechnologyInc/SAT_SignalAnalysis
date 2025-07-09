@@ -349,42 +349,81 @@
                     </Grid.RowDefinitions>
 
                     <!-- B Scan Controls -->
-                    <StackPanel Grid.Row="0" 
-                              Orientation="Horizontal" 
-                              Margin="10,5,5,0"
-                              Background="#F5F5F5">
-                        <TextBlock Text="B Scan Data View" 
-                                 FontWeight="Bold" 
-                                 VerticalAlignment="Center" 
-                                 Margin="5,0"/>
-                        <Button x:Name="btnLoadBScanData"
-                                Content="Load B Scan Data"
-                                Margin="15,0,15,0"
-                                Padding="5,2"
-                                Click="BtnLoadBScanData_Click"/>
-                        <Button x:Name="btnClearBScanData"
-                                Content="Clear B Scan Data"
-                                Margin="5,0,15,0"
-                                Padding="5,2"
-                                Click="BtnClearBScanData_Click"/>
-                        <Button x:Name="btnBScanEnvelope"
-                                Content="B Scan Envelope"
-                                Margin="5,0,15,0"
-                                Padding="5,2"
-                                Click="BtnBScanEnvelope_Click"/>
-                        <Button x:Name="btnSaveBScanBitmap"
-                                Content="Save as Bitmap"
-                                Margin="5,0,15,0"
-                                Padding="5,2"
-                                Click="BtnSaveBScanBitmap_Click"/>
-                        <CheckBox x:Name="chkShowLegendBScan"
-                                Content="범례 표시"
-                                Margin="15,0,15,0"
-                                IsChecked="True"
-                                VerticalAlignment="Center"
-                                Checked="ChkShowLegendBScan_Checked"
-                                Unchecked="ChkShowLegendBScan_Unchecked"/>
-                    </StackPanel>
+                    <Grid Grid.Row="0" 
+                          Margin="10,5,5,0"
+                          Background="#F5F5F5">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <!-- First Row -->
+                        <StackPanel Grid.Row="0" 
+                                  Orientation="Horizontal" 
+                                  Margin="5,5,5,2">
+                            <TextBlock Text="B Scan Data View" 
+                                     FontWeight="Bold" 
+                                     VerticalAlignment="Center" 
+                                     Margin="5,0"/>
+                            <Button x:Name="btnLoadBScanData"
+                                    Content="Load B Scan Data"
+                                    Margin="15,0,15,0"
+                                    Padding="5,2"
+                                    Click="BtnLoadBScanData_Click"/>
+                            <Button x:Name="btnClearBScanData"
+                                    Content="Clear B Scan Data"
+                                    Margin="5,0,15,0"
+                                    Padding="5,2"
+                                    Click="BtnClearBScanData_Click"/>
+                            <Button x:Name="btnDataProcess"
+                                    Content="Data Process"
+                                    Margin="5,0,15,0"
+                                    Padding="5,2"
+                                    Click="BtnDataProcess_Click"/>
+                            <TextBlock Text="기준 데이터:" 
+                                     VerticalAlignment="Center" 
+                                     Margin="15,0,5,0"/>
+                            <TextBox x:Name="txtReferenceDataIndex"
+                                     Width="60"
+                                     Text="0"
+                                     VerticalAlignment="Center"
+                                     Margin="5,0,15,0"
+                                     ToolTip="데이터 재정렬 기준 인덱스"/>
+                        </StackPanel>
+                        
+                        <!-- Second Row -->
+                        <StackPanel Grid.Row="1" 
+                                  Orientation="Horizontal" 
+                                  Margin="5,2,5,5">
+                            <Button x:Name="btnBScanEnvelope"
+                                    Content="B Scan Envelope"
+                                    Margin="5,0,15,0"
+                                    Padding="5,2"
+                                    Click="BtnBScanEnvelope_Click"/>
+                            <TextBlock Text="Max Voltage:" 
+                                     VerticalAlignment="Center" 
+                                     Margin="15,0,5,0"/>
+                            <TextBox x:Name="txtMaxVoltage"
+                                     Width="80"
+                                     Text="0"
+                                     VerticalAlignment="Center"
+                                     Margin="5,0,15,0"
+                                     ToolTip="기준 데이터의 최대 전압값 (Intensity)"
+                                     TextChanged="TxtMaxVoltage_TextChanged"/>
+                            <Button x:Name="btnSaveBScanBitmap"
+                                    Content="Save as Bitmap"
+                                    Margin="5,0,15,0"
+                                    Padding="5,2"
+                                    Click="BtnSaveBScanBitmap_Click"/>
+                            <CheckBox x:Name="chkShowLegendBScan"
+                                    Content="범례 표시"
+                                    Margin="15,0,15,0"
+                                    IsChecked="True"
+                                    VerticalAlignment="Center"
+                                    Checked="ChkShowLegendBScan_Checked"
+                                    Unchecked="ChkShowLegendBScan_Unchecked"/>
+                        </StackPanel>
+                    </Grid>
 
                     <!-- B Scan Graph -->
                     <Border Grid.Row="1" 
