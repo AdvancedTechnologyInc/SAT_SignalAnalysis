@@ -23,6 +23,7 @@ using System.IO;
 using ScottPlot.Plottable;
 using Xceed.Wpf.Toolkit;
 using MathNet.Numerics;
+using MathNet.Numerics.IntegralTransforms;
 using System.Numerics;
 
 namespace SAT_TestProgram
@@ -4686,8 +4687,21 @@ namespace SAT_TestProgram
                     return;
                 }
 
-                // 데이터 처리 로직
-                int[,] processedArray = ProcessBScanData(_dataManager.BscanLine, referenceIndex);
+                // Intensity 값 가져오기 (사용자가 입력한 Max Voltage 값 우선 사용)
+                double intensity;
+                if (!double.TryParse(txtMaxVoltage.Text, out intensity))
+                {
+                    // 사용자가 입력한 값이 유효하지 않으면 DataManager의 값 사용
+                    intensity = _dataManager.MaxVoltage;
+                    if (intensity <= 0)
+                    {
+                        System.Windows.MessageBox.Show("유효한 Max Voltage 값을 입력해주세요.", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+                }
+
+                // 데이터 처리 로직 (Envelope 기반)
+                int[,] processedArray = ProcessBScanData(_dataManager.BscanLine, referenceIndex, intensity);
 
                 // 처리된 데이터로 업데이트
                 _dataManager.BscanLine = processedArray;
@@ -4699,7 +4713,7 @@ namespace SAT_TestProgram
                 UpdateMaxVoltage();
 
                 System.Windows.MessageBox.Show(
-                    $"데이터 처리 완료\n기준 데이터 인덱스: {referenceIndex}",
+                    $"데이터 처리 완료\n기준 데이터 인덱스: {referenceIndex}\nIntensity: {intensity:F2}",
                     "성공",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
@@ -4715,12 +4729,13 @@ namespace SAT_TestProgram
         }
 
         /// <summary>
-        /// B Scan 데이터를 처리하는 메서드
+        /// B Scan 데이터를 처리하는 메서드 (Envelope 기반)
         /// </summary>
         /// <param name="bScanArray">원본 B Scan 데이터</param>
         /// <param name="referenceIndex">기준 데이터 인덱스</param>
+        /// <param name="intensity">신호 임계값</param>
         /// <returns>처리된 B Scan 데이터</returns>
-        private int[,] ProcessBScanData(int[,] bScanArray, int referenceIndex)
+        private int[,] ProcessBScanData(int[,] bScanArray, int referenceIndex, double intensity)
         {
             int rowCount = bScanArray.GetLength(0);
             int colCount = bScanArray.GetLength(1);
@@ -4728,39 +4743,55 @@ namespace SAT_TestProgram
             // 결과 배열 생성
             int[,] processedArray = new int[rowCount, colCount];
 
-            // 기준 데이터의 30% 구간에서 최대값 위치 찾기
-            int front30Percent = (int)(colCount * 0.3);
-            int maxIndexInReference = FindMaxIndexInRange(bScanArray, referenceIndex, 0, front30Percent);
+            // 기준 신호의 Envelope 계산
+            int[] referenceSignal = new int[colCount];
+            for (int i = 0; i < colCount; i++)
+            {
+                referenceSignal[i] = bScanArray[referenceIndex, i];
+            }
+            double[] standardEnvelope = ComputeEnvelope(referenceSignal);
+
+            // 기준 신호의 첫 번째 최대값 인덱스 찾기
+            (bool standardRst, int standardIndex) = GetFirstMax(standardEnvelope, intensity);
+
+            if (!standardRst)
+            {
+                // 기준 신호에서 최대값을 찾을 수 없는 경우 원본 데이터 반환
+                return bScanArray;
+            }
 
             // 각 행에 대해 데이터 처리
             for (int row = 0; row < rowCount; row++)
             {
-                // 현재 행의 30% 구간에서 최대값 위치 찾기
-                int maxIndexInCurrentRow = FindMaxIndexInRange(bScanArray, row, 0, front30Percent);
-
-                // Shift 값 계산 (기준 행의 최대값 위치 - 현재 행의 최대값 위치)
-                int shift = maxIndexInReference - maxIndexInCurrentRow;
-
-                // 데이터를 Shift하여 복사
-                for (int col = 0; col < colCount; col++)
+                // 현재 행의 신호 추출
+                int[] currentSignal = new int[colCount];
+                for (int i = 0; i < colCount; i++)
                 {
-                    int shiftedCol = col + shift;
+                    currentSignal[i] = bScanArray[row, i];
+                }
+
+                // 현재 신호의 Envelope 계산
+                double[] tempEnvelope = ComputeEnvelope(currentSignal);
+                (bool tempRst, int tempIndex) = GetFirstMax(tempEnvelope, intensity);
+
+                if (tempRst)
+                {
+                    // Shift 값 계산
+                    int shiftIndex = standardIndex - tempIndex;
                     
-                    // 범위를 벗어나는 경우 처리
-                    if (shiftedCol < 0)
+                    // 데이터를 Shift하여 복사
+                    int[] shiftedSignal = ShiftArrayWithZeroPadding(currentSignal, shiftIndex);
+                    for (int col = 0; col < colCount; col++)
                     {
-                        // 왼쪽으로 벗어나는 경우: 첫 번째 값으로 채움
-                        processedArray[row, col] = bScanArray[row, 0];
+                        processedArray[row, col] = shiftedSignal[col];
                     }
-                    else if (shiftedCol >= colCount)
+                }
+                else
+                {
+                    // 최대값을 찾을 수 없는 경우 0으로 채움
+                    for (int col = 0; col < colCount; col++)
                     {
-                        // 오른쪽으로 벗어나는 경우: 마지막 값으로 채움
-                        processedArray[row, col] = bScanArray[row, colCount - 1];
-                    }
-                    else
-                    {
-                        // 정상 범위 내의 경우: Shift된 위치의 값 사용
-                        processedArray[row, col] = bScanArray[row, shiftedCol];
+                        processedArray[row, col] = 0;
                     }
                 }
             }
@@ -4839,15 +4870,9 @@ namespace SAT_TestProgram
         {
             try
             {
-                if (_dataManager == null)
-                {
-                    return;
-                }
-
-                if (double.TryParse(txtMaxVoltage.Text, out double maxVoltage))
-                {
-                    _dataManager.MaxVoltage = maxVoltage;
-                }
+                // 사용자가 값을 수정할 때는 DataManager에 저장하지 않고,
+                // Data Process 실행 시에만 값을 사용하도록 함
+                // 이렇게 하면 사용자가 실시간으로 값을 조정할 수 있음
             }
             catch (Exception ex)
             {
@@ -4898,17 +4923,147 @@ namespace SAT_TestProgram
                 // 최대값 가져오기
                 double maxVoltage = _dataManager.BscanLine[referenceIndex, maxIndex];
                 
-                // DataManager에 저장
+                // DataManager에 저장 (참조용)
                 _dataManager.MaxVoltage = maxVoltage;
                 
-                // UI 업데이트
-                txtMaxVoltage.Text = maxVoltage.ToString("F2");
+                // UI 업데이트 (사용자가 수동으로 입력한 값이 없을 때만)
+                if (string.IsNullOrEmpty(txtMaxVoltage.Text) || txtMaxVoltage.Text == "0")
+                {
+                    txtMaxVoltage.Text = maxVoltage.ToString("F2");
+                }
             }
             catch (Exception ex)
             {
                 System.Windows.MessageBox.Show($"Max Voltage 업데이트 중 오류 발생: {ex.Message}", "오류", MessageBoxButton.OK, MessageBoxImage.Error);
                 txtMaxVoltage.Text = "0";
             }
+        }
+
+        #endregion
+
+        #region Envelope Processing Methods
+
+        /// <summary>
+        /// Envelope 계산 메서드
+        /// </summary>
+        /// <param name="input">입력 신호</param>
+        /// <returns>Envelope 신호</returns>
+        private double[] ComputeEnvelope(int[] input)
+        {
+            int n = input.Length;
+
+            // 1. int[] → double[] 변환 + DC 성분 제거
+            double[] real = input.Select(v => (double)v).ToArray();
+            double mean = real.Average();
+            for (int i = 0; i < n; i++)
+                real[i] -= mean;
+
+            // 2. 복소수 배열로 변환
+            Complex[] spectrum = real.Select(r => new Complex(r, 0)).ToArray();
+
+            // 3. FFT
+            Fourier.Forward(spectrum, FourierOptions.Matlab);
+
+            // 4. Hilbert 필터 적용
+            Complex[] H = new Complex[n];
+            H[0] = Complex.One;
+            if (n % 2 == 0)
+            {
+                H[n / 2] = Complex.One;
+                for (int i = 1; i < n / 2; i++)
+                    H[i] = new Complex(2, 0);
+            }
+            else
+            {
+                for (int i = 1; i < (n + 1) / 2; i++)
+                    H[i] = new Complex(2, 0);
+            }
+
+            for (int i = 0; i < n; i++)
+                spectrum[i] *= H[i];
+
+            // 5. Inverse FFT → analytic signal
+            Fourier.Inverse(spectrum, FourierOptions.Matlab);
+
+            // 6. envelope = magnitude
+            double[] envelope = new double[n];
+            for (int i = 0; i < n; i++)
+                envelope[i] = spectrum[i].Magnitude;
+
+            return envelope;
+        }
+
+        /// <summary>
+        /// 첫 번째 최대값 인덱스를 찾는 메서드
+        /// </summary>
+        /// <param name="data">데이터 배열</param>
+        /// <param name="signalThreshold">신호 임계값</param>
+        /// <param name="ratio">검색 범위 비율 (기본값: 0.5)</param>
+        /// <returns>(성공 여부, 최대값 인덱스)</returns>
+        private (bool, int) GetFirstMax(double[] data, double signalThreshold, double ratio = 0.5)
+        {
+            int length = data.Length;
+            int endIndex = (int)(length * ratio);
+
+            if (endIndex > length) endIndex = length;  // 배열 길이를 넘지 않도록 보정
+
+            double maxValue = double.MinValue;
+            int maxIndex = -1;
+
+            for (int i = 0; i < endIndex; i++)
+            {
+                if (data[i] > maxValue)
+                {
+                    maxValue = data[i];
+                    maxIndex = i;
+                }
+            }
+
+            bool rst = true;
+
+            if (maxValue < signalThreshold)
+            {
+                rst = false;
+            }
+
+            return (rst, maxIndex);
+        }
+
+        /// <summary>
+        /// 배열을 Shift하고 Zero Padding을 적용하는 메서드
+        /// </summary>
+        /// <param name="data">원본 데이터</param>
+        /// <param name="shift">Shift 값</param>
+        /// <returns>Shift된 데이터</returns>
+        private int[] ShiftArrayWithZeroPadding(int[] data, int shift)
+        {
+            int length = data.Length;
+            int[] result = new int[length];
+
+            if (shift > 0)
+            {
+                // 오른쪽으로 shift: 앞부분 0으로 패딩
+                for (int i = 0; i < length - shift; i++)
+                {
+                    result[i + shift] = data[i];
+                }
+            }
+            else if (shift < 0)
+            {
+                // 왼쪽으로 shift: 뒷부분 0으로 패딩
+                shift = -shift;
+                for (int i = shift; i < length; i++)
+                {
+                    result[i - shift] = data[i];
+                }
+            }
+            else
+            {
+                // shift == 0인 경우
+                Array.Copy(data, result, length);
+            }
+
+            return result;
         }
 
         #endregion
